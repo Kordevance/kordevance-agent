@@ -1,0 +1,50 @@
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, status
+
+from kordevance.application.dependencies.deps import get_profile_id
+from kordevance.application.dependencies.model_provider_management import (
+    AddProviderUseCaseDep,
+    DeleteProviderUseCaseDep,
+    GetProvidersUseCaseDep,
+    GetProviderUseCaseDep,
+)
+from kordevance.application.schemas.model_provider import ModelProviderRequest, ModelProviderResponse
+from kordevance.domain.use_cases.llm_provider_management.request_models import (
+    AddProviderRequest,
+    GenericProviderRequest,
+)
+
+router: APIRouter = APIRouter(prefix="/providers", tags=["providers"])
+
+
+@router.post("", status_code=status.HTTP_204_NO_CONTENT)
+async def add_provider(
+    body: ModelProviderRequest, service: AddProviderUseCaseDep, profile_id: UUID = Depends(get_profile_id)
+) -> ModelProviderResponse:
+    payload = AddProviderRequest(profile_id=profile_id, name=body.name, api_key=body.api_key, endpoint=body.endpoint)
+    provider = await service.execute(payload)
+    return ModelProviderResponse(id=provider.id, token_usage=provider.tokens_used)
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_provider(
+    id: UUID, service: DeleteProviderUseCaseDep, profile_id: UUID = Depends(get_profile_id)
+) -> None:
+    return await service.execute(GenericProviderRequest(profile_id=profile_id, provider_id=id))
+
+
+@router.get("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+async def get_provider(
+    id: UUID, service: GetProviderUseCaseDep, profile_id: UUID = Depends(get_profile_id)
+) -> ModelProviderResponse:
+    provider = await service.execute(GenericProviderRequest(profile_id=profile_id, provider_id=id))
+    return ModelProviderResponse(id=provider.id, token_usage=provider.tokens_used)
+
+
+@router.get("")
+async def get_all_providers(
+    service: GetProvidersUseCaseDep, profile_id: UUID = Depends(get_profile_id)
+) -> list[ModelProviderResponse]:
+    providers = await service.execute(profile_id)
+    return [ModelProviderResponse(id=provider.id, token_usage=provider.tokens_used) for provider in providers]

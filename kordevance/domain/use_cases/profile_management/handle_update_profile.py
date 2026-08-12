@@ -12,5 +12,5 @@ class HandleUpdateProfile(UseCase[UpdateProfileRequest, None]):
         self._repository: ProfileRepo = profile_repository
 
     async def execute(self, request: UpdateProfileRequest) -> None:
-        self._logger.info(f"Handling profile update for profile {request.id}")
-        return await self._repository.update(Profile(id=request.id, name=request.name))
+        self._logger.info(f"Handling profile update for profile {request.profile_id}")
+        return await self._repository.update(Profile(id=request.profile_id, name=request.name))

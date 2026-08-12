@@ -5,8 +5,10 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel import SQLModel
 
+from kordevance.adapters.sql_store.llm_provider_repository import LLMProviderRepository
 from kordevance.adapters.sql_store.profile_repository import ProfileRepository
 from kordevance.application import _WORKING_DIRECTORY
+from kordevance.domain.ports.llm_provider_repository import LLMProviderRepo
 from kordevance.domain.ports.profile_repository import ProfileRepo
 
 _DB_PATH = _WORKING_DIRECTORY.joinpath("kordevance.db")
@@ -28,4 +30,9 @@ def get_profile_repository() -> ProfileRepo:
     return ProfileRepository(get_engine())
 
 
+def get_llm_provider_repository() -> LLMProviderRepo:
+    return LLMProviderRepository(get_engine())
+
+
 ProfileRepoDep = Annotated[ProfileRepo, Depends(get_profile_repository)]
+ModelProviderDep = Annotated[LLMProviderRepo, Depends(get_llm_provider_repository)]

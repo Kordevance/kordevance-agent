@@ -4,3 +4,7 @@ class BadRequestError(Exception):
 
 class ProfileNotFoundError(Exception):
     pass
+
+
+class ProviderNotFoundError(Exception):
+    pass
