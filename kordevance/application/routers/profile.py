@@ -10,7 +10,7 @@ from kordevance.application.dependencies.profile_management import (
     UpdateProfileUseCaseDep,
 )
 from kordevance.application.schemas.profile import CreateProfileRequest, ProfileResponse, UpdateProfileRequest
-from kordevance.domain.models.profile import Profile
+from kordevance.domain.use_cases.profile_management.request_models import UpdateProfileRequest
 
 router: APIRouter = APIRouter(prefix="/profiles", tags=["profiles"])
 
@@ -23,7 +23,7 @@ async def create_profile(body: CreateProfileRequest, service: CreateProfileUseCa
 
 @router.patch("")
 async def update_profile(body: UpdateProfileRequest, service: UpdateProfileUseCaseDep) -> None:
-    await service.execute(Profile(id=body.id, name=body.name))
+    await service.execute(UpdateProfileRequest(id=body.id, name=body.name))
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
