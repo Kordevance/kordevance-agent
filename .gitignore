@@ -3,3 +3,4 @@ __pycache__/
 .import_linter_cache/
 .DS_Store
 .idea/
+trash/
