@@ -6,12 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel import SQLModel
 
 from kordevance.adapters.crypto.fernet_encryptor import FernetEncryptor
+from kordevance.adapters.sql_store.goal_repository import GoalRepository
 from kordevance.adapters.sql_store.llm_provider_repository import LLMProviderRepository
 from kordevance.adapters.sql_store.model_assignment_repository import ModelAssignmentRepository
 from kordevance.adapters.sql_store.profile_repository import ProfileRepository
 from kordevance.application import _WORKING_DIRECTORY
 from kordevance.application.config.secrets import load_or_create_encryption_key
 from kordevance.domain.ports.encryptor import Encryptor
+from kordevance.domain.ports.goal_repository import GoalRepo
 from kordevance.domain.ports.llm_provider_repository import LLMProviderRepo
 from kordevance.domain.ports.model_assignment_repository import ModelAssignmentRepo
 from kordevance.domain.ports.profile_repository import ProfileRepo
@@ -48,6 +50,11 @@ def get_model_assignment_repository() -> ModelAssignmentRepo:
     return ModelAssignmentRepository(get_engine())
 
 
+def get_goal_repository() -> GoalRepo:
+    return GoalRepository(get_engine())
+
+
 ProfileRepoDep = Annotated[ProfileRepo, Depends(get_profile_repository)]
 ModelProviderDep = Annotated[LLMProviderRepo, Depends(get_llm_provider_repository)]
 ModelAssignmentDep = Annotated[ModelAssignmentRepo, Depends(get_model_assignment_repository)]
+GoalRepoDep = Annotated[GoalRepo, Depends(get_goal_repository)]

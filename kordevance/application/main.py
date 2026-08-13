@@ -8,6 +8,7 @@ from kordevance.application.config.exception_handlers import register_exception_
 from kordevance.application.config.logs import setup_logging
 from kordevance.application.config.middleware import register_middlewares
 from kordevance.application.dependencies.sql_store_adapter import init_db
+from kordevance.application.routers.chat import router as chat_router
 from kordevance.application.routers.model_assignment import router as model_assignment_router
 from kordevance.application.routers.model_provider import router as provider_router
 from kordevance.application.routers.profile import router as profile_router
@@ -36,3 +37,4 @@ register_exception_handlers(app)
 app.include_router(profile_router)
 app.include_router(provider_router)
 app.include_router(model_assignment_router)
+app.include_router(chat_router)
