@@ -1,24 +1,11 @@
-from dataclasses import dataclass
 from datetime import datetime
-from uuid import UUID
 
 from pydantic_ai import RunContext
 
+from kordevance.adapters.agents.deps import GoalDefinitionDeps
 from kordevance.domain.models.connectors import ConnectorTypes
 from kordevance.domain.models.goal import HorizonGranularity, ProgressMetricType
-from kordevance.domain.use_cases.goal_management.handle_create_goal import HandleCreateGoal
 from kordevance.domain.use_cases.goal_management.request_models import CreateGoalRequest
-
-
-@dataclass
-class GoalDefinitionDeps:
-    profile_id: UUID
-    create_goal_use_case: HandleCreateGoal
-
-
-async def get_connector_status(_ctx: RunContext[GoalDefinitionDeps]) -> list[ConnectorTypes]:
-    """Return the connectors currently connected for this profile"""
-    return []
 
 
 async def create_goal(

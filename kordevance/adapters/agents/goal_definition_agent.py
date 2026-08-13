@@ -1,8 +1,10 @@
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
 
+from kordevance.adapters.agents.deps import GoalDefinitionDeps
 from kordevance.adapters.agents.persona import AGENT_PERSONA
-from kordevance.adapters.agents.tools import GoalDefinitionDeps, create_goal, get_connector_status
+from kordevance.adapters.agents.tools.create_goal_tool import create_goal
+from kordevance.adapters.agents.tools.get_connector_status_tool import get_connector_status
 
 _INSTRUCTIONS = (
     AGENT_PERSONA
