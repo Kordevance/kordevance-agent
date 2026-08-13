@@ -31,7 +31,7 @@ async def delete_profile(id: UUID, service: DeleteProfileUseCaseDep) -> None:
     await service.execute(id)
 
 
-@router.get("/{id}", response_model=ProfileResponse, status_code=status.HTTP_204_NO_CONTENT)
+@router.get("/{id}", response_model=ProfileResponse)
 async def get_profile(id: UUID, service: GetProfileUseCaseDep) -> ProfileResponse:
     profile = await service.execute(id)
     return ProfileResponse(id=profile.id, name=profile.name)
