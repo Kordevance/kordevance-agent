@@ -54,6 +54,22 @@ class ModelAssignmentRepository(ModelAssignmentRepo):
             if result.rowcount == 0:
                 raise ItemNotFoundError(f"No {role} model assignment found for profile: {profile_id}")
 
+    async def fetch(self, profile_id: UUID, role: ModelRole) -> ModelAssignment:
+        async with AsyncSession(self._engine) as session:
+            row = (
+                await session.exec(
+                    select(ModelAssignmentRecord).where(
+                        col(ModelAssignmentRecord.profile_id) == profile_id,
+                        col(ModelAssignmentRecord.role) == role,
+                    )
+                )
+            ).one_or_none()
+
+            if row is None:
+                raise ItemNotFoundError(f"No {role} model assignment found for profile: {profile_id}")
+
+            return ModelAssignment(role=row.role, provider_id=row.provider_id, model_id=row.model_id)
+
     async def fetch_all(self, profile_id: UUID) -> list[ModelAssignment]:
         async with AsyncSession(self._engine) as session:
             rows = (
