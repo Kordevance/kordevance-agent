@@ -12,10 +12,12 @@ class AuthorizedLLMProviders(StrEnum):
     Gemini = "gemini"
     Mistral = "mistral"
     XAI = "xai"
+    Other = "other"
 
 
 class LLMProvider(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     name: AuthorizedLLMProviders
     endpoint: str
+    api_key: str
     tokens_used: int

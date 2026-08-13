@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 
 from kordevance.application.dependencies.deps import get_profile_id
+from kordevance.application.dependencies.model_catalog import FetchModelCatalogUseCaseDep
 from kordevance.application.dependencies.model_provider_management import (
     AddProviderUseCaseDep,
     DeleteProviderUseCaseDep,
@@ -18,7 +19,7 @@ from kordevance.domain.use_cases.llm_provider_management.request_models import (
 router: APIRouter = APIRouter(prefix="/providers", tags=["providers"])
 
 
-@router.post("", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def add_provider(
     body: ModelProviderRequest, service: AddProviderUseCaseDep, profile_id: UUID = Depends(get_profile_id)
 ) -> ModelProviderResponse:
@@ -34,7 +35,7 @@ async def delete_provider(
     return await service.execute(GenericProviderRequest(profile_id=profile_id, provider_id=id))
 
 
-@router.get("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.get("/{id}")
 async def get_provider(
     id: UUID, service: GetProviderUseCaseDep, profile_id: UUID = Depends(get_profile_id)
 ) -> ModelProviderResponse:
@@ -48,3 +49,10 @@ async def get_all_providers(
 ) -> list[ModelProviderResponse]:
     providers = await service.execute(profile_id)
     return [ModelProviderResponse(id=provider.id, token_usage=provider.tokens_used) for provider in providers]
+
+
+@router.get("/{id}/models")
+async def get_provider_model_catalog(
+    id: UUID, service: FetchModelCatalogUseCaseDep, profile_id: UUID = Depends(get_profile_id)
+) -> list[str]:
+    return await service.execute(GenericProviderRequest(profile_id=profile_id, provider_id=id))

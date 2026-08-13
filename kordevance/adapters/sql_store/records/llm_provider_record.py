@@ -12,4 +12,5 @@ class LLMProviderRecord(SQLModel, table=True):
     profile_id: UUID = Field(primary_key=True)
     name: AuthorizedLLMProviders
     endpoint: str
+    api_key_encrypted: str
     tokens_used: int

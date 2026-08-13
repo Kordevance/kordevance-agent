@@ -20,13 +20,13 @@ class LLMProviderFactory:
             return None
 
     @staticmethod
-    def get_default_endpoint(provider: AuthorizedLLMProviders) -> str:
+    def _get_default_endpoint(provider: AuthorizedLLMProviders) -> str:
         try:
             return DEFAULT_PROVIDER_ENDPOINTS[provider]
         except KeyError as err:
             raise ValueError(f"No default endpoint configured for provider: {provider}") from err
 
     @classmethod
-    def build_client(cls, provider: AuthorizedLLMProviders, endpoint: str | None) -> LLMProvider:
-        endpoint = endpoint or cls.get_default_endpoint(provider)
-        return LLMProvider(name=provider, tokens_used=0, endpoint=endpoint)
+    def build_client(cls, provider: AuthorizedLLMProviders, endpoint: str | None, api_key: str) -> LLMProvider:
+        endpoint = endpoint or cls._get_default_endpoint(provider)
+        return LLMProvider(name=provider, tokens_used=0, endpoint=endpoint, api_key=api_key)

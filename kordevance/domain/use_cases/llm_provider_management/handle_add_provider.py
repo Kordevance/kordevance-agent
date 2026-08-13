@@ -20,6 +20,12 @@ class HandleAddProvider(UseCase[AddProviderRequest, LLMProvider]):
         if provider_type is None:
             raise BadRequestError(f"Provider {request.name} is not supported")
 
-        provider = LLMProviderFactory.build_client(provider=provider_type, endpoint=request.endpoint)
+        try:
+            provider = LLMProviderFactory.build_client(
+                provider=provider_type, endpoint=request.endpoint, api_key=request.api_key
+            )
+        except ValueError as err:
+            raise BadRequestError(str(err)) from err
+
         await self._repository.save(request.profile_id, provider)
         return provider
