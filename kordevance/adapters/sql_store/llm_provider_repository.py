@@ -72,7 +72,7 @@ class LLMProviderRepository(LLMProviderRepo):
             rows = (
                 await session.exec(
                     select(LLMProviderRecord).where(
-                        col(LLMProviderRecord.id) == profile_id,
+                        col(LLMProviderRecord.profile_id) == profile_id,
                     )
                 )
             ).all()
