@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from kordevance.application.dependencies.fs_adapter import ProfileWorkspaceDep
 from kordevance.application.dependencies.sql_store_adapter import ProfileRepoDep
 from kordevance.domain.use_cases.profile_management.handle_create_profile import HandleCreateProfile
 from kordevance.domain.use_cases.profile_management.handle_delete_profile import HandleDeleteProfile
@@ -10,12 +11,12 @@ from kordevance.domain.use_cases.profile_management.handle_fetch_profiles import
 from kordevance.domain.use_cases.profile_management.handle_update_profile import HandleUpdateProfile
 
 
-def get_create_profile_use_case(repository: ProfileRepoDep) -> HandleCreateProfile:
-    return HandleCreateProfile(profile_repository=repository)
+def get_create_profile_use_case(repository: ProfileRepoDep, workspace: ProfileWorkspaceDep) -> HandleCreateProfile:
+    return HandleCreateProfile(profile_repository=repository, workspace=workspace)
 
 
-def get_delete_profile_use_case(repository: ProfileRepoDep) -> HandleDeleteProfile:
-    return HandleDeleteProfile(profile_repository=repository)
+def get_delete_profile_use_case(repository: ProfileRepoDep, workspace: ProfileWorkspaceDep) -> HandleDeleteProfile:
+    return HandleDeleteProfile(profile_repository=repository, workspace=workspace)
 
 
 def get_update_profile_use_case(repository: ProfileRepoDep) -> HandleUpdateProfile:
