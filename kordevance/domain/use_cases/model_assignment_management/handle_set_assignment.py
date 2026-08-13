@@ -16,6 +16,7 @@ class HandleSetModelAssignment(UseCase[SetModelAssignmentRequest, ModelAssignmen
     async def execute(self, request: SetModelAssignmentRequest) -> ModelAssignment:
         self._logger.info(f"Setting {request.role} model assignment for profile {request.profile_id}")
 
+        # Ensure provider exists
         await self._provider_repository.fetch(request.profile_id, request.provider_id)
 
         assignment = ModelAssignment(role=request.role, provider_id=request.provider_id, model_id=request.model_id)
