@@ -2,9 +2,5 @@ class BadRequestError(Exception):
     pass
 
 
-class ProfileNotFoundError(Exception):
-    pass
-
-
-class ProviderNotFoundError(Exception):
+class ItemNotFoundError(Exception):
     pass

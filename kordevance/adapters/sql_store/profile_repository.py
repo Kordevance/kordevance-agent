@@ -7,7 +7,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from kordevance.adapters.sql_store.records.profile_record import ProfileRecord
 from kordevance.domain.models.profile import Profile
 from kordevance.domain.ports.profile_repository import ProfileRepo
-from kordevance.exceptions import ProfileNotFoundError
+from kordevance.exceptions import ItemNotFoundError
 
 
 class ProfileRepository(ProfileRepo):
@@ -29,14 +29,14 @@ class ProfileRepository(ProfileRepo):
             await session.commit()
 
             if result.rowcount == 0:
-                raise ProfileNotFoundError(f"Could not find any profile with ID: {profile_id}")
+                raise ItemNotFoundError(f"Could not find any profile with ID: {profile_id}")
 
     async def fetch(self, profile_id: UUID) -> Profile:
         async with AsyncSession(self._engine) as session:
             row = (await session.exec(select(ProfileRecord).where(ProfileRecord.id == profile_id))).one_or_none()
 
             if row is None:
-                raise ProfileNotFoundError(f"Could not find any profile with ID: {profile_id}")
+                raise ItemNotFoundError(f"Could not find any profile with ID: {profile_id}")
 
             return Profile(id=row.id, name=row.name)
 
@@ -53,4 +53,4 @@ class ProfileRepository(ProfileRepo):
             await session.commit()
 
             if result.rowcount == 0:
-                raise ProfileNotFoundError(f"Could not find any profile with ID: {profile.id}")
+                raise ItemNotFoundError(f"Could not find any profile with ID: {profile.id}")

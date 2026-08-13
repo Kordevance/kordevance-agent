@@ -5,7 +5,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from kordevance.application.schemas.error_response import ErrorResponse
-from kordevance.exceptions import BadRequestError, ProfileNotFoundError
+from kordevance.exceptions import (
+    BadRequestError,
+    ItemNotFoundError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +36,9 @@ def register_exception_handlers(app: FastAPI) -> None:
             content=ErrorResponse(error="Bad Request", reason=reason).model_dump(),
         )
 
-    @app.exception_handler(ProfileNotFoundError)
-    async def profile_not_found_exception_handler(request: Request, exc: ProfileNotFoundError) -> JSONResponse:
-        logger.info("Profile not found on %s: %s", _log_context(request), exc)
+    @app.exception_handler(ItemNotFoundError)
+    async def item_not_found_exception_handler(request: Request, exc: ItemNotFoundError) -> JSONResponse:
+        logger.info("Item not found on %s: %s", _log_context(request), exc)
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content=ErrorResponse(error="Not Found", reason=str(exc)).model_dump(),
