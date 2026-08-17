@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from kordevance.domain.models.connectors import ConnectorTypes
+from kordevance.domain.models.connectors import Connector
 from kordevance.domain.models.goal import HorizonGranularity, ProgressMetricType
 
 
@@ -17,4 +17,4 @@ class CreateGoalRequest(BaseModel):
     horizon_granularity: HorizonGranularity
     progress_metric_type: ProgressMetricType
     target_value: float | None = None
-    required_connectors: list[ConnectorTypes] = []
+    required_connectors: list[Connector] = []

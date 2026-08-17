@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic_ai import RunContext
 
 from kordevance.adapters.agents.deps import GoalDefinitionDeps
-from kordevance.domain.models.connectors import ConnectorTypes
+from kordevance.domain.models.connectors import Connector
 from kordevance.domain.models.goal import HorizonGranularity, ProgressMetricType
 from kordevance.domain.use_cases.goal_management.request_models import CreateGoalRequest
 
@@ -18,7 +18,7 @@ async def create_goal(
     progress_metric_type: ProgressMetricType,
     description: str | None = None,
     target_value: float | None = None,
-    required_connectors: list[ConnectorTypes] | None = None,
+    required_connectors: list[Connector] | None = None,
 ) -> str:
     """Create the goal once every required field has a confident, user-confirmed value.
 

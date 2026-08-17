@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from kordevance.domain.models.connectors import ConnectorTypes
+from kordevance.domain.models.connectors import Connector
 
 
 class GoalStatus(StrEnum):
@@ -42,7 +42,7 @@ class Goal(BaseModel):
     target_value: float | None = None
     current_value: float = 0
 
-    required_connectors: list[ConnectorTypes] = Field(default_factory=list)
+    required_connectors: list[Connector] = Field(default_factory=list)
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
