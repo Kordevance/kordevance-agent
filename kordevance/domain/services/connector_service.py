@@ -13,9 +13,9 @@ class ConnectorService:
         self._device_service: DeviceService = DeviceService(store=credential_manager)
         self._relay_client: ProxyRelayClient = proxy_relay_client
 
-    async def get_connectors(self) -> list[Connector]:
+    async def get_connectors(self, profile_id: UUID) -> list[Connector]:
         device = self._device_service.get_current_device()
-        relay_connectors = await self._relay_client.get_connections(device)
+        relay_connectors = await self._relay_client.get_connections(device, profile_id)
         available_connectors = await self._relay_client.get_available_connectors(device)
 
         combined: dict[tuple[str, str], Connector] = {}

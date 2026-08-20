@@ -17,4 +17,4 @@ class HandleFetchConnectors(UseCase[UUID, list[Connector]]):
 
     async def execute(self, profile_id: UUID) -> list[Connector]:
         self._logger.info(f"Fetching connectors for profile {profile_id}")
-        return await self._service.get_connectors()
+        return await self._service.get_connectors(profile_id)
