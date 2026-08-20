@@ -11,4 +11,3 @@ class ModelProviderRequest(BaseModel):
 
 class ModelProviderResponse(BaseModel):
     id: UUID
-    token_usage: int

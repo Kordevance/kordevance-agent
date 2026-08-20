@@ -22,7 +22,6 @@ class LLMProviderRepository(LLMProviderRepo):
             name=row.name,
             endpoint=row.endpoint,
             api_key=self._encryptor.decrypt(row.api_key_encrypted),
-            tokens_used=row.tokens_used,
         )
 
     async def save(self, profile_id: UUID, provider: LLMProvider) -> None:
@@ -32,7 +31,6 @@ class LLMProviderRepository(LLMProviderRepo):
             name=provider.name,
             endpoint=provider.endpoint,
             api_key_encrypted=self._encryptor.encrypt(provider.api_key),
-            tokens_used=provider.tokens_used,
         )
 
         async with AsyncSession(self._engine) as session:

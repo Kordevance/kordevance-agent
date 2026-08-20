@@ -20,4 +20,3 @@ class LLMProvider(BaseModel):
     name: AuthorizedLLMProviders
     endpoint: str
     api_key: str
-    tokens_used: int

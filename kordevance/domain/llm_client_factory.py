@@ -29,4 +29,4 @@ class LLMProviderFactory:
     @classmethod
     def build_client(cls, provider: AuthorizedLLMProviders, endpoint: str | None, api_key: str) -> LLMProvider:
         endpoint = endpoint or cls._get_default_endpoint(provider)
-        return LLMProvider(name=provider, tokens_used=0, endpoint=endpoint, api_key=api_key)
+        return LLMProvider(name=provider, endpoint=endpoint, api_key=api_key)
