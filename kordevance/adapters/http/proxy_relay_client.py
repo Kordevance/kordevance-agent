@@ -21,10 +21,11 @@ class HttpProxyRelayClient(ProxyRelayClient):
             payload = response.json()
             return Device(id=payload["device_id"], secret=payload["secret"])
 
-    async def get_connections(self, device: Device) -> list[Connector]:
+    async def get_connections(self, device: Device, profile_id: UUID) -> list[Connector]:
         headers = {"X-Device-Id": device.id, "X-Device-Secret": device.secret}
         async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(f"{self._base_url}/connections/sessions", headers=headers)
+            params: dict[str, Any] = {"profile_id": profile_id}
+            response = await client.get(f"{self._base_url}/connections/sessions", headers=headers, params=params)
             response.raise_for_status()
             payload = response.json()
 
@@ -36,7 +37,7 @@ class HttpProxyRelayClient(ProxyRelayClient):
     async def get_available_connectors(self, device: Device) -> list[AvailableConnectors]:
         headers = {"X-Device-Id": device.id, "X-Device-Secret": device.secret}
         async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(f"{self._base_url}/connectors/", headers=headers)
+            response = await client.get(f"{self._base_url}/connectors", headers=headers)
             response.raise_for_status()
             payload = response.json()
 
@@ -48,7 +49,7 @@ class HttpProxyRelayClient(ProxyRelayClient):
     async def register_connector(self, device: Device, profile_id: UUID, provider: str, category: str) -> str:
         headers = {"X-Device-Id": device.id, "X-Device-Secret": device.secret}
         async with httpx.AsyncClient(timeout=15.0) as client:
-            payload = {"integration": category, "provider": provider, "profile_id": profile_id}
+            payload = {"integration": category, "provider": provider, "profile_id": str(profile_id)}
             response = await client.post(f"{self._base_url}/connections/session", headers=headers, json=payload)
             response.raise_for_status()
             return response.text
@@ -81,9 +82,7 @@ class HttpProxyRelayClient(ProxyRelayClient):
                 for entry in payload
             ]
 
-    async def execute_tool(
-        self, device: Device, profile_id: UUID, tool_name: str, tool_input: dict[str, Any]
-    ) -> Any:
+    async def execute_tool(self, device: Device, profile_id: UUID, tool_name: str, tool_input: dict[str, Any]) -> Any:
         headers = {"X-Device-Id": device.id, "X-Device-Secret": device.secret}
         async with httpx.AsyncClient(timeout=30.0) as client:
             payload = {"profile_id": str(profile_id), "tool_name": tool_name, "input": tool_input}
