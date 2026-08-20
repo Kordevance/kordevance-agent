@@ -1,5 +1,3 @@
-import logging
-
 from kordevance.domain.contracts.use_case import UseCase
 from kordevance.domain.models.goal import Goal
 from kordevance.domain.ports.goal_repository import GoalRepo
@@ -10,7 +8,6 @@ from kordevance.domain.use_cases.goal_management.request_models import CreateGoa
 
 class HandleCreateGoal(UseCase[CreateGoalRequest, Goal]):
     def __init__(self, repository: GoalRepo, job_scheduler: JobScheduler) -> None:
-        self._logger: logging.Logger = logging.getLogger(__name__)
         self._service: GoalService = GoalService(repository=repository)
         self._job_scheduler: JobScheduler = job_scheduler
 
