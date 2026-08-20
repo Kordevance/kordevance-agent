@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -67,18 +68,19 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
 
     async def handle_message(self, profile_id: UUID, conversation_id: UUID, message: str) -> str:
         history = await self._load_history(profile_id, conversation_id)
+        now = datetime.now(UTC)
 
         triage_model = await self._model_resolver.resolve(profile_id, ModelRole.TRIAGE)
         orchestrator: Agent[None, GoalDefinitionHandoff | str] = Agent(
             model=triage_model,
             output_type=[GoalDefinitionHandoff, str],
-            instructions=_ORCHESTRATOR_INSTRUCTIONS,
+            instructions=_ORCHESTRATOR_INSTRUCTIONS + f"\n\nCurrent date and time: {now.isoformat()}",
         )
         route_result = await orchestrator.run(message, message_history=history)
 
         if isinstance(route_result.output, GoalDefinitionHandoff):
             primary_model = await self._model_resolver.resolve(profile_id, ModelRole.PRIMARY)
-            goal_agent = build_goal_definition_agent(primary_model)
+            goal_agent = build_goal_definition_agent(primary_model, now)
             goal_deps = GoalDefinitionDeps(
                 profile_id=profile_id,
                 create_goal_use_case=HandleCreateGoal(repository=self._goal_repo, job_scheduler=self._job_scheduler),

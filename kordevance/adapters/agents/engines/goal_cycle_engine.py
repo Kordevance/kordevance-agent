@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -31,6 +32,7 @@ _INVALID_TOOL_NAME_CHARS = re.compile(r"[^a-zA-Z0-9_-]")
 
 def _sanitize_tool_name(name: str) -> str:
     return _INVALID_TOOL_NAME_CHARS.sub("_", name)[:128]
+
 
 _TRIAGE_INSTRUCTIONS = (
     AGENT_PERSONA
@@ -64,6 +66,13 @@ This covers two kinds of outcome in one pass, whichever the tools available make
 
 Rules:
 - Use the available tools to find out — don't invent results.
+- Never invent a detail that wasn't actually stated by the source or the goal. If a source gives a
+  date but no time, do not fabricate a specific time (e.g. defaulting to 22:00 for a task whose
+  source only said "Thursday") — that manufactures false precision. When a tool call requires a
+  field you don't actually have a value for, use the least specific value the tool schema allows
+  (e.g. midnight or end-of-day) and say plainly in the summary that the exact time wasn't given,
+  rather than presenting an invented time as fact. The same principle applies to any other field:
+  stay exactly as precise as the source actually was, never more.
 - Tools listed as "requires confirmation" are not callable — never attempt to call them. Only
   describe what you'd want to do with one, in your summary, so the user can confirm it later.
 - If this is explicitly marked as the FINAL attempt, you must return your best available
@@ -81,7 +90,9 @@ this was a final attempt. You have no tools — judge only from the goal, its ta
 
 Return a revised finding: drop or adjust anything that doesn't actually hold up, keep anything
 that does. If the draft is already sound, return it unchanged. Never raise a candidate's or a
-completion's confidence beyond what the draft's own summary actually supports.
+completion's confidence beyond what the draft's own summary actually supports. Also check for
+invented precision — a specific time, amount, or detail presented as fact when the draft's own
+summary only supports something vaguer — and correct it back to what the evidence actually shows.
 """
 )
 
@@ -112,6 +123,7 @@ class PydanticAIGoalCycleEngine(GoalCycleEngine):
     @staticmethod
     def _goal_context(goal: Goal, is_final_attempt: bool) -> str:
         return f"""
+Current date and time: {datetime.now(UTC).isoformat()}
 Goal: {goal.title}
 Goal description/preferences: {goal.description or "(none)"}
 Goal domain: {goal.domain}

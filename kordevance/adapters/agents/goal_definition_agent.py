@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
 
@@ -26,6 +28,9 @@ Rules:
 - If the user names a date by which they need a decision, answer, or result that is earlier than
   the goal's own end date (e.g. "book it by the 12th" for a trip that runs later that month), pass
   that as due_date. Do not infer or guess a due_date that wasn't stated — leave it unset otherwise.
+- Never invent a value for any field the user didn't actually state or confirm — not a date, not a
+  target_value, not a domain. If something is ambiguous (e.g. "next week", "soon") resolve it using
+  the current date only when the resulting date is unambiguous; otherwise ask instead of guessing.
 - Never call create_goal until every required field has a confident, user-confirmed value. If
   something is missing or ambiguous, ask for exactly what's missing in your reply. Do not guess.
 - If the goal plausibly depends on a connector (e.g. tracking via a calendar or a fitness app),
@@ -43,11 +48,11 @@ Rules:
 )
 
 
-def build_goal_definition_agent(model: Model) -> Agent[GoalDefinitionDeps, str]:
+def build_goal_definition_agent(model: Model, current_datetime: datetime) -> Agent[GoalDefinitionDeps, str]:
     return Agent(
         model=model,
         deps_type=GoalDefinitionDeps,
         output_type=str,
-        instructions=_INSTRUCTIONS,
+        instructions=_INSTRUCTIONS + f"\n\nCurrent date and time: {current_datetime.isoformat()}",
         tools=[get_current_datetime, create_goal, get_connector_status],
     )
