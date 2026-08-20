@@ -5,7 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from kordevance.application.schemas.error_response import ErrorResponse
-from kordevance.exceptions import BadRequestError, ItemNotFoundError
+from kordevance.exceptions import BadRequestError, ConnectionMissingError, ItemNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,14 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content=ErrorResponse(error="Not Found", reason=str(exc)).model_dump(),
+        )
+
+    @app.exception_handler(ConnectionMissingError)
+    async def connection_missing_exception_handler(request: Request, exc: ConnectionMissingError) -> JSONResponse:
+        logger.info("Connection missing on %s: %s", _log_context(request), exc)
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content=ErrorResponse(error="Conflict", reason=str(exc)).model_dump(),
         )
 
     @app.exception_handler(Exception)
