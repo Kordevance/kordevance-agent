@@ -15,6 +15,8 @@ async def get_all_connectors(
 ) -> list[GetConnectorsResponse]:
     connectors = await service.execute(profile_id)
     return [
-        GetConnectorsResponse(provider=connector.provider, category=connector.category, active=connector.active)
+        GetConnectorsResponse(
+            provider=connector.provider, category=connector.category, active=connector.active, icon=connector.icon
+        )
         for connector in connectors
     ]

@@ -5,3 +5,4 @@ class GetConnectorsResponse(BaseModel):
     provider: str
     category: str
     active: bool
+    icon: str
