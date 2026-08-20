@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-DEFAULT_CYCLE_INTERVAL_SECONDS = 2 * 60  # 2 minutes
+DEFAULT_CYCLE_INTERVAL_SECONDS = 2 * 60 * 60  # 2 Hours
 
 
 class JobScheduler(ABC):
