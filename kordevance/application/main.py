@@ -9,6 +9,7 @@ from kordevance.application.config.exception_handlers import register_exception_
 from kordevance.application.config.logs import setup_logging
 from kordevance.application.config.middleware import register_middlewares
 from kordevance.application.dependencies.proxy_relay_client import get_proxy_relay_client
+from kordevance.application.dependencies.scheduler import get_job_scheduler
 from kordevance.application.dependencies.secret_store_adapter import get_credential_manager
 from kordevance.application.dependencies.sql_store_adapter import init_db
 from kordevance.application.routers.chat import router as chat_router
@@ -34,7 +35,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     await ensure_device_registered.execute()
 
+    job_scheduler = get_job_scheduler()
+    job_scheduler.start()
+
     yield
+
+    job_scheduler.shutdown()
 
 
 app = FastAPI(
