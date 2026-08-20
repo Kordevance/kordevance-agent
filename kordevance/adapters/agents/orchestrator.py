@@ -11,6 +11,7 @@ from kordevance.adapters.agents.persona import AGENT_PERSONA
 from kordevance.domain.models.model_role import ModelRole
 from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
 from kordevance.domain.ports.goal_repository import GoalRepo
+from kordevance.domain.ports.job_scheduler import JobScheduler
 from kordevance.domain.ports.message_store import MessageStore
 from kordevance.domain.use_cases.connectors_management.handle_fetch_connectors import HandleFetchConnectors
 from kordevance.domain.use_cases.goal_management.handle_create_goal import HandleCreateGoal
@@ -20,8 +21,10 @@ _ORCHESTRATOR_INSTRUCTIONS = (
     + """
 You are the routing layer for Kordevance, a personal planning assistant. You never discuss plans
 or goals in detail yourself — you only decide, for each incoming message, whether it expresses
-wanting to achieve/start/finish something (a new goal), in which case you hand off to the
-goal-definition specialist. For anything else, reply briefly and helpfully yourself.
+wanting something achieved, tracked, or watched for over time (a new goal — this includes ongoing
+requests like "keep an eye on my mail for X and do Y", not just fixed targets), in which case you
+hand off to the goal-definition specialist. For anything else, reply briefly and helpfully
+yourself.
 """
 )
 
@@ -41,11 +44,13 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
         message_store: MessageStore,
         goal_repo: GoalRepo,
         fetch_connectors_use_case: HandleFetchConnectors,
+        job_scheduler: JobScheduler,
     ) -> None:
         self._model_resolver: ModelResolver = model_resolver
         self._message_store: MessageStore = message_store
         self._goal_repo: GoalRepo = goal_repo
         self._fetch_connectors_use_case: HandleFetchConnectors = fetch_connectors_use_case
+        self._job_scheduler: JobScheduler = job_scheduler
 
     async def _load_history(self, profile_id: UUID, conversation_id: UUID) -> list[ModelMessage]:
         lines = await self._message_store.load_history(profile_id, conversation_id)
@@ -76,7 +81,7 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
             goal_agent = build_goal_definition_agent(primary_model)
             goal_deps = GoalDefinitionDeps(
                 profile_id=profile_id,
-                create_goal_use_case=HandleCreateGoal(repository=self._goal_repo),
+                create_goal_use_case=HandleCreateGoal(repository=self._goal_repo, job_scheduler=self._job_scheduler),
                 fetch_connectors_use_case=self._fetch_connectors_use_case,
             )
             goal_result = await goal_agent.run(message, message_history=history, deps=goal_deps)
