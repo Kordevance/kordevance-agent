@@ -11,8 +11,6 @@ from kordevance.adapters.agents.model_resolver import ModelResolver
 from kordevance.adapters.agents.persona import AGENT_PERSONA
 from kordevance.domain.models.model_role import ModelRole
 from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
-from kordevance.domain.ports.goal_repository import GoalRepo
-from kordevance.domain.ports.job_scheduler import JobScheduler
 from kordevance.domain.ports.message_store import MessageStore
 from kordevance.domain.use_cases.connectors_management.handle_fetch_connectors import HandleFetchConnectors
 from kordevance.domain.use_cases.goal_management.handle_create_goal import HandleCreateGoal
@@ -43,15 +41,13 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
         self,
         model_resolver: ModelResolver,
         message_store: MessageStore,
-        goal_repo: GoalRepo,
+        create_goal_use_case: HandleCreateGoal,
         fetch_connectors_use_case: HandleFetchConnectors,
-        job_scheduler: JobScheduler,
     ) -> None:
         self._model_resolver: ModelResolver = model_resolver
         self._message_store: MessageStore = message_store
-        self._goal_repo: GoalRepo = goal_repo
+        self._create_goal_use_case: HandleCreateGoal = create_goal_use_case
         self._fetch_connectors_use_case: HandleFetchConnectors = fetch_connectors_use_case
-        self._job_scheduler: JobScheduler = job_scheduler
 
     async def _load_history(self, profile_id: UUID, conversation_id: UUID) -> list[ModelMessage]:
         lines = await self._message_store.load_history(profile_id, conversation_id)
@@ -83,7 +79,7 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
             goal_agent = build_goal_definition_agent(primary_model, now)
             goal_deps = GoalDefinitionDeps(
                 profile_id=profile_id,
-                create_goal_use_case=HandleCreateGoal(repository=self._goal_repo, job_scheduler=self._job_scheduler),
+                create_goal_use_case=self._create_goal_use_case,
                 fetch_connectors_use_case=self._fetch_connectors_use_case,
             )
             goal_result = await goal_agent.run(message, message_history=history, deps=goal_deps)
