@@ -1,0 +1,17 @@
+from abc import ABC, abstractmethod
+from uuid import UUID
+
+from kordevance.domain.models.task import Task
+
+
+class TaskRepo(ABC):
+    @abstractmethod
+    async def save(self, task: Task) -> None: ...
+    @abstractmethod
+    async def fetch(self, profile_id: UUID, task_id: UUID) -> Task: ...
+    @abstractmethod
+    async def fetch_all_for_goal(self, profile_id: UUID, goal_id: UUID) -> list[Task]: ...
+    @abstractmethod
+    async def update(self, task: Task) -> None: ...
+    @abstractmethod
+    async def delete(self, profile_id: UUID, task_id: UUID) -> None: ...
