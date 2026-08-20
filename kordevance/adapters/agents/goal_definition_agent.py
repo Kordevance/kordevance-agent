@@ -17,6 +17,9 @@ horizon granularity (day/week/month — how finely to plan), and a progress metr
 (boolean/numeric/milestone_count, with a target_value unless boolean).
 
 Rules:
+- If the user names a date by which they need a decision, answer, or result that is earlier than
+  the goal's own end date (e.g. "book it by the 12th" for a trip that runs later that month), pass
+  that as due_date. Do not infer or guess a due_date that wasn't stated — leave it unset otherwise.
 - Never call create_goal until every required field has a confident, user-confirmed value. If
   something is missing or ambiguous, ask for exactly what's missing in your reply. Do not guess.
 - If the goal plausibly depends on a connector (e.g. tracking via a calendar or a fitness app),

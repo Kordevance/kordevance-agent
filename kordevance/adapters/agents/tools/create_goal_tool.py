@@ -17,6 +17,7 @@ async def create_goal(
     horizon_granularity: HorizonGranularity,
     progress_metric_type: ProgressMetricType,
     description: str | None = None,
+    due_date: str | None = None,
     target_value: float | None = None,
     required_connectors: list[Connector] | None = None,
 ) -> str:
@@ -36,6 +37,11 @@ async def create_goal(
         horizon_granularity: Planning detail-window size for this goal.
         progress_metric_type: How progress is measured.
         description: Optional longer description of the goal.
+        due_date: Optional ISO 8601 datetime for a decision/action deadline that is earlier than
+            end_at — set this only when the user names a date by which they need an answer or
+            result, separate from the goal's own end date (e.g. "find me flights for a trip in
+            December, but tell me what you've got by November 12th" -> due_date is November 12th,
+            end_at is the trip's own end). Leave unset when no such earlier deadline was named.
         target_value: Required unless progress_metric_type is "boolean".
         required_connectors: Connectors this goal's tracking depends on, if any.
 
@@ -51,6 +57,7 @@ async def create_goal(
             start_at=datetime.fromisoformat(start_at),
             end_at=datetime.fromisoformat(end_at),
             horizon_granularity=horizon_granularity,
+            due_date=datetime.fromisoformat(due_date) if due_date else None,
             progress_metric_type=progress_metric_type,
             target_value=target_value,
             required_connectors=required_connectors or [],

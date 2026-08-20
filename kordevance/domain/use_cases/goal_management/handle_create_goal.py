@@ -21,6 +21,7 @@ class HandleCreateGoal(UseCase[CreateGoalRequest, Goal]):
             start_at=request.start_at,
             end_at=request.end_at,
             horizon_granularity=request.horizon_granularity,
+            due_date=request.due_date,
             progress_metric_type=request.progress_metric_type,
             target_value=request.target_value,
             required_connectors=request.required_connectors,

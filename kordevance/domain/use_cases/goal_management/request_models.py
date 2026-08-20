@@ -15,6 +15,7 @@ class CreateGoalRequest(BaseModel):
     start_at: datetime
     end_at: datetime
     horizon_granularity: HorizonGranularity
+    due_date: datetime | None = None
     progress_metric_type: ProgressMetricType
     target_value: float | None = None
     required_connectors: list[Connector] = []

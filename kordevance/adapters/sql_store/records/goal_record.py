@@ -22,6 +22,9 @@ class GoalRecord(SQLModel, table=True):
     end_at: datetime
     horizon_granularity: HorizonGranularity
 
+    # optional decision/action deadline, distinct from end_at.
+    due_date: datetime | None = None
+
     progress_metric_type: ProgressMetricType
     target_value: float | None = None
     current_value: float
