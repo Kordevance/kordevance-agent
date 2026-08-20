@@ -60,3 +60,11 @@ class GoalService:
         await self._repository.save(goal)
         self._logger.info(f"Goal '{title}' created successfully with ID {goal.id}")
         return goal
+
+    async def get_all_goals(self, profile_id: UUID) -> list[Goal]:
+        self._logger.info(f"Fetching goals assigned to profile {profile_id}")
+        return await self._repository.fetch_all(profile_id)
+
+    async def delete_goal(self, profile_id: UUID, goal_id: UUID) -> None:
+        self._logger.info(f"Deleting goal {goal_id}")
+        return await self._repository.delete(profile_id, goal_id)

@@ -6,8 +6,8 @@ from kordevance.adapters.agents.model_resolver import ModelResolver
 from kordevance.adapters.agents.orchestrator import PydanticAIChatOrchestrator
 from kordevance.application.dependencies.connectors_management import FetchConnectorsUseCaseDep
 from kordevance.application.dependencies.fs_adapter import MessageStoreDep
-from kordevance.application.dependencies.scheduler import JobSchedulerDep
-from kordevance.application.dependencies.sql_store_adapter import GoalRepoDep, ModelAssignmentDep, ModelProviderDep
+from kordevance.application.dependencies.goal_management import CreateGoalUseCaseDep
+from kordevance.application.dependencies.sql_store_adapter import ModelAssignmentDep, ModelProviderDep
 from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
 from kordevance.domain.use_cases.orchestration.handle_chat_orchestration import HandleChatOrchestration
 
@@ -16,17 +16,15 @@ def _get_chat_orchestrator(
     model_assignment_repo: ModelAssignmentDep,
     llm_provider_repo: ModelProviderDep,
     message_store: MessageStoreDep,
-    goal_repo: GoalRepoDep,
+    create_goal_use_case: CreateGoalUseCaseDep,
     fetch_connectors_use_case: FetchConnectorsUseCaseDep,
-    job_scheduler: JobSchedulerDep,
 ) -> ChatOrchestrator:
     model_resolver = ModelResolver(model_assignment_repo=model_assignment_repo, llm_provider_repo=llm_provider_repo)
     return PydanticAIChatOrchestrator(
         model_resolver=model_resolver,
         message_store=message_store,
-        goal_repo=goal_repo,
+        create_goal_use_case=create_goal_use_case,
         fetch_connectors_use_case=fetch_connectors_use_case,
-        job_scheduler=job_scheduler,
     )
 
 

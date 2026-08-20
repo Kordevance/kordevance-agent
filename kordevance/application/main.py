@@ -14,6 +14,7 @@ from kordevance.application.dependencies.secret_store_adapter import get_credent
 from kordevance.application.dependencies.sql_store_adapter import init_db
 from kordevance.application.routers.chat import router as chat_router
 from kordevance.application.routers.connectors import router as connectors_router
+from kordevance.application.routers.goals import router as goals_router
 from kordevance.application.routers.model_assignment import router as model_assignment_router
 from kordevance.application.routers.model_provider import router as provider_router
 from kordevance.application.routers.profile import router as profile_router
@@ -60,3 +61,4 @@ app.include_router(provider_router)
 app.include_router(model_assignment_router)
 app.include_router(chat_router)
 app.include_router(connectors_router)
+app.include_router(goals_router)
