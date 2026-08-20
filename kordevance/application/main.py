@@ -12,6 +12,7 @@ from kordevance.application.dependencies.proxy_relay_client import get_proxy_rel
 from kordevance.application.dependencies.secret_store_adapter import get_credential_manager
 from kordevance.application.dependencies.sql_store_adapter import init_db
 from kordevance.application.routers.chat import router as chat_router
+from kordevance.application.routers.connectors import router as connectors_router
 from kordevance.application.routers.model_assignment import router as model_assignment_router
 from kordevance.application.routers.model_provider import router as provider_router
 from kordevance.application.routers.profile import router as profile_router
@@ -30,7 +31,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         credential_manager=get_credential_manager(),
         proxy_relay_client=get_proxy_relay_client(),
     )
-    app.state.device = await ensure_device_registered.execute()
+
+    await ensure_device_registered.execute()
 
     yield
 
@@ -51,3 +53,4 @@ app.include_router(profile_router)
 app.include_router(provider_router)
 app.include_router(model_assignment_router)
 app.include_router(chat_router)
+app.include_router(connectors_router)
