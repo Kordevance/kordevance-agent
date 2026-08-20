@@ -4,7 +4,7 @@ from uuid import UUID
 
 from kordevance.domain.models.engine_source import EngineSource
 from kordevance.domain.models.event import Event
-from kordevance.domain.models.goal import Goal, GoalStatus
+from kordevance.domain.models.goal import Goal, GoalStatus, HorizonGranularity
 from kordevance.domain.models.goal_cycle_finding import GoalCycleFinding
 from kordevance.domain.models.goal_cycle_result import GoalCycleResult
 from kordevance.domain.models.task import Task, TaskStatus
@@ -15,6 +15,11 @@ from kordevance.domain.ports.task_repository import TaskRepo
 
 _FINAL_REMINDER_WINDOW = timedelta(hours=24)
 _TERMINAL_STATUSES = {TaskStatus.VERIFIED, TaskStatus.USER_DONE, TaskStatus.CANCELLED}
+_HORIZON_PERIODS = {
+    HorizonGranularity.DAY: timedelta(days=1),
+    HorizonGranularity.WEEK: timedelta(weeks=1),
+    HorizonGranularity.MONTH: timedelta(days=30),
+}
 
 
 def _as_aware_utc(value: datetime) -> datetime:
@@ -48,20 +53,37 @@ class GoalCycleService:
             result.notes.append(f"Goal status is '{goal.status}' — skipping cycle")
             return result
 
-        existing_tasks = await self._task_repo.fetch_all_for_goal(profile_id, goal_id)
-
-        await self._run_engine(goal, existing_tasks, result)
-        existing_tasks = await self._task_repo.fetch_all_for_goal(profile_id, goal_id)
-
-        self._replan(existing_tasks, result)
-
-        return result
-
-    async def _run_engine(self, goal: Goal, existing_tasks: list[Task], result: GoalCycleResult) -> None:
         now = datetime.now(UTC)
         deadline = _as_aware_utc(goal.due_date or goal.end_at)
         is_final_attempt = now >= deadline
 
+        if not is_final_attempt and goal.horizon_granularity is not None and goal.last_cycle_at is not None:
+            period = _HORIZON_PERIODS[goal.horizon_granularity]
+            if now - _as_aware_utc(goal.last_cycle_at) < period:
+                self._logger.info(f"Goal {goal_id} not due yet per horizon '{goal.horizon_granularity}'")
+                result.notes.append(f"Not due yet per horizon '{goal.horizon_granularity}'")
+                return result
+
+        existing_tasks = await self._task_repo.fetch_all_for_goal(profile_id, goal_id)
+
+        await self._run_engine(goal, existing_tasks, result, now, is_final_attempt)
+        existing_tasks = await self._task_repo.fetch_all_for_goal(profile_id, goal_id)
+
+        self._replan(existing_tasks, result)
+
+        goal.last_cycle_at = now
+        await self._goal_repo.update(goal)
+
+        return result
+
+    async def _run_engine(
+        self,
+        goal: Goal,
+        existing_tasks: list[Task],
+        result: GoalCycleResult,
+        now: datetime,
+        is_final_attempt: bool,
+    ) -> None:
         finding = await self._goal_cycle_engine.run(
             goal=goal,
             profile_id=goal.profile_id,

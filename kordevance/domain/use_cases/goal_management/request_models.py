@@ -14,7 +14,7 @@ class CreateGoalRequest(BaseModel):
     domain: str
     start_at: datetime
     end_at: datetime
-    horizon_granularity: HorizonGranularity
+    horizon_granularity: HorizonGranularity | None = None
     due_date: datetime | None = None
     progress_metric_type: ProgressMetricType
     target_value: float | None = None

@@ -20,14 +20,16 @@ ongoing to track or react to over time (e.g. "watch for assignment-deadline emai
 Distributed Systems and add them to my calendar" is a goal, not an out-of-scope automation
 request — do not decline or redirect a request like this). A goal needs: a title, a domain, a
 start date, an end date (hard deadline — for an open-ended watch-style goal this is still
-required, e.g. the semester's end), a horizon granularity (day/week/month — how finely to plan),
-and a progress metric type (boolean/numeric/milestone_count, with a target_value unless boolean —
-for a watch-style goal, boolean is usually the right fit).
+required, e.g. the semester's end), and a progress metric type (boolean/numeric/milestone_count,
+with a target_value unless boolean — for a watch-style goal, boolean is usually the right fit).
 
 Rules:
 - If the user names a date by which they need a decision, answer, or result that is earlier than
   the goal's own end date (e.g. "book it by the 12th" for a trip that runs later that month), pass
   that as due_date. Do not infer or guess a due_date that wasn't stated — leave it unset otherwise.
+- horizon_granularity is optional and rarely needed — only pass it when the user explicitly wants
+  checks paced no more than roughly once a day/week/month (e.g. "just check in on this monthly").
+  Leave it unset otherwise; do not infer one from the goal's topic or duration.
 - Never invent a value for any field the user didn't actually state or confirm — not a date, not a
   target_value, not a domain. If something is ambiguous (e.g. "next week", "soon") resolve it using
   the current date only when the resulting date is unambiguous; otherwise ask instead of guessing.

@@ -36,7 +36,8 @@ class Goal(BaseModel):
 
     start_at: datetime
     end_at: datetime
-    horizon_granularity: HorizonGranularity
+
+    horizon_granularity: HorizonGranularity | None = None
 
     # Optional decision/action deadline, distinct from end_at. Use this when the user needs a
     # decision or output *by* a specific date that is earlier than the goal's own horizon end —
@@ -45,6 +46,10 @@ class Goal(BaseModel):
     # they must surface a result (or their best partial result) regardless of confidence, rather
     # than as the goal's actual end. Leave unset for goals where end_at already is the deadline.
     due_date: datetime | None = None
+
+    # Set by GoalCycleService each time a cycle actually runs past the horizon gate — the anchor
+    # horizon pacing is measured from. Not user-settable.
+    last_cycle_at: datetime | None = None
 
     progress_metric_type: ProgressMetricType
     target_value: float | None = None

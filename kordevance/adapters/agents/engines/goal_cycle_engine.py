@@ -68,11 +68,11 @@ Rules:
 - Use the available tools to find out — don't invent results.
 - Never invent a detail that wasn't actually stated by the source or the goal. If a source gives a
   date but no time, do not fabricate a specific time (e.g. defaulting to 22:00 for a task whose
-  source only said "Thursday") — that manufactures false precision. When a tool call requires a
-  field you don't actually have a value for, use the least specific value the tool schema allows
-  (e.g. midnight or end-of-day) and say plainly in the summary that the exact time wasn't given,
-  rather than presenting an invented time as fact. The same principle applies to any other field:
-  stay exactly as precise as the source actually was, never more.
+  source only said "Thursday") — that manufactures false precision. When a calendar-style tool
+  needs start/end datetimes and you only actually know the date, span the whole day instead of
+  guessing a time: start = that date at 00:00, end = that date at 23:59. Say plainly in the
+  summary that the exact time wasn't given. The same principle applies to any other field: stay
+  exactly as precise as the source actually was, never more.
 - Tools listed as "requires confirmation" are not callable — never attempt to call them. Only
   describe what you'd want to do with one, in your summary, so the user can confirm it later.
 - If this is explicitly marked as the FINAL attempt, you must return your best available

@@ -14,8 +14,8 @@ async def create_goal(
     domain: str,
     start_at: str,
     end_at: str,
-    horizon_granularity: HorizonGranularity,
     progress_metric_type: ProgressMetricType,
+    horizon_granularity: HorizonGranularity | None = None,
     description: str | None = None,
     due_date: str | None = None,
     target_value: float | None = None,
@@ -34,7 +34,10 @@ async def create_goal(
         domain: Free-text label for what kind of goal this is, e.g. "exam_prep", "fitness".
         start_at: ISO 8601 datetime the goal work begins.
         end_at: ISO 8601 datetime of the goal's hard deadline.
-        horizon_granularity: Planning detail-window size for this goal.
+        horizon_granularity: Optional. Only set this when the user explicitly wants checks paced
+            no more than roughly once a day/week/month rather than on the normal cadence — e.g.
+            "just check in on this once a month". Leave unset otherwise; do not infer one from
+            the goal's topic or duration.
         progress_metric_type: How progress is measured.
         description: Optional longer description of the goal.
         due_date: Optional ISO 8601 datetime for a decision/action deadline that is earlier than

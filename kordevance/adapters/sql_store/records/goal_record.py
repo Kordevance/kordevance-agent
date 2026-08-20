@@ -20,10 +20,12 @@ class GoalRecord(SQLModel, table=True):
 
     start_at: datetime
     end_at: datetime
-    horizon_granularity: HorizonGranularity
+    horizon_granularity: HorizonGranularity | None = None
 
     # optional decision/action deadline, distinct from end_at.
     due_date: datetime | None = None
+
+    last_cycle_at: datetime | None = None
 
     progress_metric_type: ProgressMetricType
     target_value: float | None = None
