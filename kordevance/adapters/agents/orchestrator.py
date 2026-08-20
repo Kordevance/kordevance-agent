@@ -12,6 +12,7 @@ from kordevance.domain.models.model_role import ModelRole
 from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
 from kordevance.domain.ports.goal_repository import GoalRepo
 from kordevance.domain.ports.message_store import MessageStore
+from kordevance.domain.use_cases.connectors_management.handle_fetch_connectors import HandleFetchConnectors
 from kordevance.domain.use_cases.goal_management.handle_create_goal import HandleCreateGoal
 
 _ORCHESTRATOR_INSTRUCTIONS = (
@@ -34,10 +35,17 @@ class GoalDefinitionHandoff(BaseModel):
 class PydanticAIChatOrchestrator(ChatOrchestrator):
     """ChatOrchestrator implementation built on pydantic-ai"""
 
-    def __init__(self, model_resolver: ModelResolver, message_store: MessageStore, goal_repo: GoalRepo) -> None:
+    def __init__(
+        self,
+        model_resolver: ModelResolver,
+        message_store: MessageStore,
+        goal_repo: GoalRepo,
+        fetch_connectors_use_case: HandleFetchConnectors,
+    ) -> None:
         self._model_resolver: ModelResolver = model_resolver
         self._message_store: MessageStore = message_store
         self._goal_repo: GoalRepo = goal_repo
+        self._fetch_connectors_use_case: HandleFetchConnectors = fetch_connectors_use_case
 
     async def _load_history(self, profile_id: UUID, conversation_id: UUID) -> list[ModelMessage]:
         lines = await self._message_store.load_history(profile_id, conversation_id)
@@ -67,7 +75,9 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
             primary_model = await self._model_resolver.resolve(profile_id, ModelRole.PRIMARY)
             goal_agent = build_goal_definition_agent(primary_model)
             goal_deps = GoalDefinitionDeps(
-                profile_id=profile_id, create_goal_use_case=HandleCreateGoal(repository=self._goal_repo)
+                profile_id=profile_id,
+                create_goal_use_case=HandleCreateGoal(repository=self._goal_repo),
+                fetch_connectors_use_case=self._fetch_connectors_use_case,
             )
             goal_result = await goal_agent.run(message, message_history=history, deps=goal_deps)
 
