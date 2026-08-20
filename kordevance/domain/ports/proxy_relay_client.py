@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from kordevance.domain.models.connectors import Connector, AvailableConnectors
+from kordevance.domain.models.connectors import AvailableConnectors, Connector
 from kordevance.domain.models.device import Device
 
 

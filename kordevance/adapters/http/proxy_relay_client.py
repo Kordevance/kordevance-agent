@@ -1,8 +1,7 @@
 import httpx
 
-from kordevance.domain.models.connectors import Connector
+from kordevance.domain.models.connectors import AvailableConnectors, Connector
 from kordevance.domain.models.device import Device
-from kordevance.domain.models.connectors import AvailableConnectors
 from kordevance.domain.ports.proxy_relay_client import ProxyRelayClient
 
 
