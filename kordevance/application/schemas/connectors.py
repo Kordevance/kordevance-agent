@@ -6,3 +6,8 @@ class GetConnectorsResponse(BaseModel):
     category: str
     active: bool
     icon: str
+
+
+class ConnectorRequest(BaseModel):
+    provider: str
+    category: str

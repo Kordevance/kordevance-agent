@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 
 from kordevance.domain.models.connectors import Connector
 from kordevance.domain.ports.credential_manager import CredManager
@@ -40,3 +41,11 @@ class ConnectorService:
                 )
 
         return list(combined.values())
+
+    async def register_connector(self, profile_id: UUID, provider: str, category: str) -> str:
+        device = self._device_service.get_current_device()
+        return await self._relay_client.register_connector(device, profile_id, provider, category)
+
+    async def unregister_connector(self, profile_id: UUID, provider: str, category: str) -> None:
+        device = self._device_service.get_current_device()
+        return await self._relay_client.delete_connector(device, profile_id, provider, category)
