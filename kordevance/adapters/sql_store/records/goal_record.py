@@ -1,10 +1,10 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
-from kordevance.domain.models.connectors import Connector
 from kordevance.domain.models.goal import GoalStatus, HorizonGranularity, ProgressMetricType
 
 
@@ -29,7 +29,7 @@ class GoalRecord(SQLModel, table=True):
     target_value: float | None = None
     current_value: float
 
-    required_connectors: list[Connector] = Field(default_factory=list, sa_column=Column(JSON))
+    required_connectors: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
 
     created_at: datetime
     updated_at: datetime

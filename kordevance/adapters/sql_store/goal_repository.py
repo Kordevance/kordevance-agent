@@ -5,6 +5,7 @@ from sqlmodel import col, delete, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from kordevance.adapters.sql_store.records.goal_record import GoalRecord
+from kordevance.domain.models.connectors import Connector
 from kordevance.domain.models.goal import Goal
 from kordevance.domain.ports.goal_repository import GoalRepo
 from kordevance.exceptions import ItemNotFoundError
@@ -30,7 +31,7 @@ class GoalRepository(GoalRepo):
             progress_metric_type=row.progress_metric_type,
             target_value=row.target_value,
             current_value=row.current_value,
-            required_connectors=row.required_connectors,
+            required_connectors=[Connector(**connector) for connector in row.required_connectors],
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
@@ -50,7 +51,7 @@ class GoalRepository(GoalRepo):
             progress_metric_type=goal.progress_metric_type,
             target_value=goal.target_value,
             current_value=goal.current_value,
-            required_connectors=goal.required_connectors,
+            required_connectors=[connector.model_dump() for connector in goal.required_connectors],
             created_at=goal.created_at,
             updated_at=goal.updated_at,
         )
@@ -95,7 +96,7 @@ class GoalRepository(GoalRepo):
                     progress_metric_type=goal.progress_metric_type,
                     target_value=goal.target_value,
                     current_value=goal.current_value,
-                    required_connectors=goal.required_connectors,
+                    required_connectors=[connector.model_dump() for connector in goal.required_connectors],
                     updated_at=goal.updated_at,
                 )
             )
