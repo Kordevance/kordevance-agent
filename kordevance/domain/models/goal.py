@@ -50,6 +50,7 @@ class Goal(BaseModel):
     # Set by GoalCycleService each time a cycle actually runs past the horizon gate — the anchor
     # horizon pacing is measured from. Not user-settable.
     last_cycle_at: datetime | None = None
+    consecutive_failures: int = 0
 
     progress_metric_type: ProgressMetricType
     target_value: float | None = None

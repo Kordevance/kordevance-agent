@@ -34,15 +34,26 @@ class HandleDeleteProfile(UseCase[UUID, None]):
 
         goals = await self._goal_repository.fetch_all(profile_id)
         for goal in goals:
-            await self._delete_goal_use_case.execute(DeleteGoalRequest(profile_id=profile_id, goal_id=goal.id))
+            try:
+                await self._delete_goal_use_case.execute(DeleteGoalRequest(profile_id=profile_id, goal_id=goal.id))
+            except Exception:
+                self._logger.exception(f"Failed to delete goal {goal.id} while deleting profile {profile_id}")
 
         providers = await self._llm_provider_repository.fetch_all(profile_id)
         for provider in providers:
-            await self._llm_provider_repository.delete(profile_id, provider.id)
+            try:
+                await self._llm_provider_repository.delete(profile_id, provider.id)
+            except Exception:
+                self._logger.exception(f"Failed to delete provider {provider.id} while deleting profile {profile_id}")
 
         assignments = await self._model_assignment_repository.fetch_all(profile_id)
         for assignment in assignments:
-            await self._model_assignment_repository.delete(profile_id, assignment.role)
+            try:
+                await self._model_assignment_repository.delete(profile_id, assignment.role)
+            except Exception:
+                self._logger.exception(
+                    f"Failed to delete model assignment {assignment.role} while deleting profile {profile_id}"
+                )
 
         await self._repository.delete(profile_id)
 

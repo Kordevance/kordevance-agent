@@ -26,6 +26,7 @@ class GoalRecord(SQLModel, table=True):
     due_date: datetime | None = None
 
     last_cycle_at: datetime | None = None
+    consecutive_failures: int = 0
 
     progress_metric_type: ProgressMetricType
     target_value: float | None = None

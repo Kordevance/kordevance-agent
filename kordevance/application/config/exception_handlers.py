@@ -55,9 +55,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(DeviceNotRegisteredError)
-    async def device_not_registered_exception_handler(
-        request: Request, exc: DeviceNotRegisteredError
-    ) -> JSONResponse:
+    async def device_not_registered_exception_handler(request: Request, exc: DeviceNotRegisteredError) -> JSONResponse:
         logger.error("Device not registered on %s: %s", _log_context(request), exc, exc_info=exc)
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
