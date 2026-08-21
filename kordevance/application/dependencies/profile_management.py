@@ -3,7 +3,13 @@ from typing import Annotated
 from fastapi import Depends
 
 from kordevance.application.dependencies.fs_adapter import ProfileWorkspaceDep
-from kordevance.application.dependencies.sql_store_adapter import ProfileRepoDep
+from kordevance.application.dependencies.goal_management import DeleteGoalUseCaseDep
+from kordevance.application.dependencies.sql_store_adapter import (
+    GoalRepoDep,
+    ModelAssignmentDep,
+    ModelProviderDep,
+    ProfileRepoDep,
+)
 from kordevance.domain.use_cases.profile_management.handle_create_profile import HandleCreateProfile
 from kordevance.domain.use_cases.profile_management.handle_delete_profile import HandleDeleteProfile
 from kordevance.domain.use_cases.profile_management.handle_fetch_profile import HandleFetchProfile
@@ -15,8 +21,22 @@ def get_create_profile_use_case(repository: ProfileRepoDep, workspace: ProfileWo
     return HandleCreateProfile(profile_repository=repository, workspace=workspace)
 
 
-def get_delete_profile_use_case(repository: ProfileRepoDep, workspace: ProfileWorkspaceDep) -> HandleDeleteProfile:
-    return HandleDeleteProfile(profile_repository=repository, workspace=workspace)
+def get_delete_profile_use_case(
+    repository: ProfileRepoDep,
+    workspace: ProfileWorkspaceDep,
+    goal_repository: GoalRepoDep,
+    delete_goal_use_case: DeleteGoalUseCaseDep,
+    llm_provider_repository: ModelProviderDep,
+    model_assignment_repository: ModelAssignmentDep,
+) -> HandleDeleteProfile:
+    return HandleDeleteProfile(
+        profile_repository=repository,
+        workspace=workspace,
+        goal_repository=goal_repository,
+        delete_goal_use_case=delete_goal_use_case,
+        llm_provider_repository=llm_provider_repository,
+        model_assignment_repository=model_assignment_repository,
+    )
 
 
 def get_update_profile_use_case(repository: ProfileRepoDep) -> HandleUpdateProfile:

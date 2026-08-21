@@ -110,3 +110,10 @@ class TaskRepository(TaskRepo):
 
             if result.rowcount == 0:
                 raise ItemNotFoundError(f"Could not find a task with ID: {task_id}")
+
+    async def delete_all_for_goal(self, profile_id: UUID, goal_id: UUID) -> None:
+        async with AsyncSession(self._engine) as session:
+            await session.exec(
+                delete(TaskRecord).where(col(TaskRecord.profile_id) == profile_id, col(TaskRecord.goal_id) == goal_id)
+            )
+            await session.commit()

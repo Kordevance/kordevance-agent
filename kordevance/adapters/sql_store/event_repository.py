@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlmodel import col, select, update
+from sqlmodel import col, delete, select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from kordevance.adapters.sql_store.records.event_record import EventRecord
@@ -97,3 +97,12 @@ class EventRepository(EventRepo):
 
             if result.rowcount == 0:
                 raise ItemNotFoundError(f"Could not find an event with ID: {event.id}")
+
+    async def delete_all_for_goal(self, profile_id: UUID, goal_id: UUID) -> None:
+        async with AsyncSession(self._engine) as session:
+            await session.exec(
+                delete(EventRecord).where(
+                    col(EventRecord.profile_id) == profile_id, col(EventRecord.goal_id) == goal_id
+                )
+            )
+            await session.commit()
