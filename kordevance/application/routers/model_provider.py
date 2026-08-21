@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
+from kordevance.application.dependencies.auth import require_paired_device
 from kordevance.application.dependencies.deps import get_profile_id
 from kordevance.application.dependencies.model_catalog import FetchModelCatalogUseCaseDep
 from kordevance.application.dependencies.model_provider_management import (
@@ -16,7 +17,7 @@ from kordevance.domain.use_cases.llm_provider_management.request_models import (
     GenericProviderRequest,
 )
 
-router: APIRouter = APIRouter(prefix="/providers", tags=["providers"])
+router: APIRouter = APIRouter(prefix="/providers", tags=["providers"], dependencies=[Depends(require_paired_device)])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

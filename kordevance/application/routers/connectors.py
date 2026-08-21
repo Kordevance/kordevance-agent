@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
+from kordevance.application.dependencies.auth import require_paired_device
 from kordevance.application.dependencies.connectors_management import (
     DeleteConnectorsUseCaseDep,
     FetchConnectorsUseCaseDep,
@@ -11,7 +12,7 @@ from kordevance.application.dependencies.deps import get_profile_id
 from kordevance.application.schemas.connectors import ConnectorRequest, GetConnectorsResponse
 from kordevance.domain.use_cases.connectors_management.request_models import ConnectorRequest as Cr
 
-router: APIRouter = APIRouter(prefix="/connectors", tags=["connectors"])
+router: APIRouter = APIRouter(prefix="/connectors", tags=["connectors"], dependencies=[Depends(require_paired_device)])
 
 
 @router.get("", response_model=list[GetConnectorsResponse])

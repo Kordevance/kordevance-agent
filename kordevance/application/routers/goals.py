@@ -2,12 +2,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
+from kordevance.application.dependencies.auth import require_paired_device
 from kordevance.application.dependencies.deps import get_profile_id
 from kordevance.application.dependencies.goal_management import DeleteGoalUseCaseDep, FetchGoalsUseCaseDep
 from kordevance.application.schemas.goals import GoalResponse
 from kordevance.domain.use_cases.goal_management.request_models import DeleteGoalRequest
 
-router: APIRouter = APIRouter(prefix="/goals", tags=["goals"])
+router: APIRouter = APIRouter(prefix="/goals", tags=["goals"], dependencies=[Depends(require_paired_device)])
 
 
 @router.get("", response_model=list[GoalResponse])

@@ -17,5 +17,9 @@ class DeviceNotRegisteredError(Exception):
     pass
 
 
+class UnauthorizedError(Exception):
+    pass
+
+
 class DeviceCredentialsLostError(Exception):
     pass

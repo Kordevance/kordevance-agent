@@ -10,6 +10,7 @@ from kordevance.exceptions import (
     ConnectionMissingError,
     DeviceNotRegisteredError,
     ItemNotFoundError,
+    UnauthorizedError,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,14 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content=ErrorResponse(error="Conflict", reason=str(exc)).model_dump(),
+        )
+
+    @app.exception_handler(UnauthorizedError)
+    async def unauthorized_exception_handler(request: Request, exc: UnauthorizedError) -> JSONResponse:
+        logger.warning("Unauthorized request on %s: %s", _log_context(request), exc)
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content=ErrorResponse(error="Unauthorized", reason=str(exc)).model_dump(),
         )
 
     @app.exception_handler(DeviceNotRegisteredError)

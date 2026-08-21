@@ -1,7 +1,8 @@
 from uuid import UUID
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 
+from kordevance.application.dependencies.auth import require_paired_device
 from kordevance.application.dependencies.profile_management import (
     CreateProfileUseCaseDep,
     DeleteProfileUseCaseDep,
@@ -12,7 +13,7 @@ from kordevance.application.dependencies.profile_management import (
 from kordevance.application.schemas.profile import CreateProfileRequest, ProfileResponse, UpdateProfileRequest
 from kordevance.domain.use_cases.profile_management.request_models import UpdateProfileRequest as Udp
 
-router: APIRouter = APIRouter(prefix="/profiles", tags=["profiles"])
+router: APIRouter = APIRouter(prefix="/profiles", tags=["profiles"], dependencies=[Depends(require_paired_device)])
 
 
 @router.post("", response_model=ProfileResponse)

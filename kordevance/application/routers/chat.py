@@ -2,12 +2,13 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends
 
+from kordevance.application.dependencies.auth import require_paired_device
 from kordevance.application.dependencies.chat import ChatOrchestratorDep
 from kordevance.application.dependencies.deps import get_profile_id
 from kordevance.application.schemas.chat import ChatMessageRequest, ChatMessageResponse
 from kordevance.domain.use_cases.orchestration.request_models import ChatOrchestrationRequest
 
-router: APIRouter = APIRouter(prefix="/chat", tags=["chat"])
+router: APIRouter = APIRouter(prefix="/chat", tags=["chat"], dependencies=[Depends(require_paired_device)])
 
 
 @router.post("/message")

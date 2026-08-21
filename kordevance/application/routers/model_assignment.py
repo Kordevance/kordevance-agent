@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
+from kordevance.application.dependencies.auth import require_paired_device
 from kordevance.application.dependencies.deps import get_profile_id
 from kordevance.application.dependencies.model_assignment_management import (
     DeleteModelAssignmentUseCaseDep,
@@ -15,7 +16,9 @@ from kordevance.domain.use_cases.model_assignment_management.request_models impo
     SetModelAssignmentRequest,
 )
 
-router: APIRouter = APIRouter(prefix="/model-assignments", tags=["model-assignments"])
+router: APIRouter = APIRouter(
+    prefix="/model-assignments", tags=["model-assignments"], dependencies=[Depends(require_paired_device)]
+)
 
 
 @router.put("/{role}", status_code=status.HTTP_200_OK)
