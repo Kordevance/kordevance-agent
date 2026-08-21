@@ -2,6 +2,7 @@ import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
+from kordevance.domain.datetime_utils import as_aware_utc
 from kordevance.domain.models.connectors import Connector
 from kordevance.domain.models.goal import Goal, GoalStatus, HorizonGranularity, ProgressMetricType
 from kordevance.domain.ports.goal_repository import GoalRepo
@@ -28,6 +29,10 @@ class GoalService:
         required_connectors: list[Connector] | None = None,
     ) -> Goal:
         self._logger.info(f"Creating goal '{title}' for profile {profile_id}")
+
+        start_at = as_aware_utc(start_at)
+        end_at = as_aware_utc(end_at)
+        due_date = as_aware_utc(due_date) if due_date is not None else None
 
         if progress_metric_type != ProgressMetricType.BOOLEAN and target_value is None:
             raise BadRequestError(f"target_value is required when progress_metric_type is '{progress_metric_type}'")

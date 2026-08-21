@@ -2,6 +2,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from kordevance.domain.datetime_utils import as_aware_utc
 from kordevance.domain.models.engine_source import EngineSource
 from kordevance.domain.models.event import Event
 from kordevance.domain.models.goal import Goal, GoalStatus, HorizonGranularity
@@ -20,10 +21,6 @@ _HORIZON_PERIODS = {
     HorizonGranularity.WEEK: timedelta(weeks=1),
     HorizonGranularity.MONTH: timedelta(days=30),
 }
-
-
-def _as_aware_utc(value: datetime) -> datetime:
-    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
 
 
 class GoalCycleService:
@@ -54,12 +51,12 @@ class GoalCycleService:
             return result
 
         now = datetime.now(UTC)
-        deadline = _as_aware_utc(goal.due_date or goal.end_at)
+        deadline = as_aware_utc(goal.due_date or goal.end_at)
         is_final_attempt = now >= deadline
 
         if not is_final_attempt and goal.horizon_granularity is not None and goal.last_cycle_at is not None:
             period = _HORIZON_PERIODS[goal.horizon_granularity]
-            if now - _as_aware_utc(goal.last_cycle_at) < period:
+            if now - as_aware_utc(goal.last_cycle_at) < period:
                 self._logger.info(f"Goal {goal_id} not due yet per horizon '{goal.horizon_granularity}'")
                 result.notes.append(f"Not due yet per horizon '{goal.horizon_granularity}'")
                 return result
@@ -173,5 +170,5 @@ class GoalCycleService:
         for task in tasks:
             if task.status in _TERMINAL_STATUSES or task.due_date is None:
                 continue
-            if _as_aware_utc(task.due_date) - now <= _FINAL_REMINDER_WINDOW:
+            if as_aware_utc(task.due_date) - now <= _FINAL_REMINDER_WINDOW:
                 result.tasks_needing_final_reminder.append(task.id)

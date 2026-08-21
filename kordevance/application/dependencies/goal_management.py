@@ -17,8 +17,8 @@ def get_fetch_goals_use_case(goal_repo: GoalRepoDep) -> HandleFetchGoals:
     return HandleFetchGoals(repository=goal_repo)
 
 
-def get_delete_goal_use_case(goal_repo: GoalRepoDep) -> HandleDeleteGoal:
-    return HandleDeleteGoal(repository=goal_repo)
+def get_delete_goal_use_case(goal_repo: GoalRepoDep, job_scheduler: JobSchedulerDep) -> HandleDeleteGoal:
+    return HandleDeleteGoal(repository=goal_repo, job_scheduler=job_scheduler)
 
 
 CreateGoalUseCaseDep = Annotated[HandleCreateGoal, Depends(get_create_goal_use_case)]

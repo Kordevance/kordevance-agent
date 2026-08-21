@@ -3,6 +3,7 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from uuid import UUID
 
+from apscheduler.jobstores.base import JobLookupError
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -46,4 +47,7 @@ class APSchedulerJobScheduler(JobScheduler):
 
     def unschedule_goal_cycle(self, goal_id: UUID) -> None:
         self._logger.info(f"Unscheduling goal cycle for goal {goal_id}")
-        self._scheduler.remove_job(self._job_id(goal_id))
+        try:
+            self._scheduler.remove_job(self._job_id(goal_id))
+        except JobLookupError:
+            self._logger.info(f"No scheduled job for goal {goal_id} — already unscheduled")

@@ -131,14 +131,22 @@ Deadline for a result: {(goal.due_date or goal.end_at).isoformat()}
 This is the FINAL attempt: {is_final_attempt}
 """
 
-    def _build_callable_tool(self, tool_def: ToolDefinition, profile_id: UUID) -> Tool[None]:
+    def _build_callable_tool(self, tool_def: ToolDefinition, profile_id: UUID, used_names: set[str]) -> Tool[None]:
         async def _call(_ctx: RunContext[None], **kwargs: Any) -> Any:
             device = self._device_service.get_current_device()
             return await self._proxy_relay_client.execute_tool(device, profile_id, tool_def.name, dict(kwargs))
 
+        name = _sanitize_tool_name(tool_def.name)
+        if name in used_names:
+            suffix = 2
+            while f"{name}_{suffix}" in used_names:
+                suffix += 1
+            name = f"{name}_{suffix}"
+        used_names.add(name)
+
         return Tool.from_schema(
             function=_call,
-            name=_sanitize_tool_name(tool_def.name),
+            name=name,
             description=tool_def.description,
             json_schema=tool_def.input_schema,
             takes_ctx=True,
@@ -166,7 +174,10 @@ This is the FINAL attempt: {is_final_attempt}
         device = self._device_service.get_current_device()
         all_tools = await self._proxy_relay_client.get_available_tools(device, profile_id)
 
-        callable_tools = [self._build_callable_tool(t, profile_id) for t in all_tools if not t.requires_confirmation]
+        used_names: set[str] = set()
+        callable_tools = [
+            self._build_callable_tool(t, profile_id, used_names) for t in all_tools if not t.requires_confirmation
+        ]
         confirmation_only_tools = [t for t in all_tools if t.requires_confirmation]
 
         if not callable_tools:
