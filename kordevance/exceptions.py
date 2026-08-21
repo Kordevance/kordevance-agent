@@ -15,3 +15,7 @@ class ConnectionMissingError(Exception):
 
 class DeviceNotRegisteredError(Exception):
     pass
+
+
+class DeviceCredentialsLostError(Exception):
+    pass

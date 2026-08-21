@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel import SQLModel
 
 from kordevance.adapters.crypto.fernet_encryptor import FernetEncryptor
+from kordevance.adapters.sql_store.device_registration_repository import DeviceRegistrationRepository
 from kordevance.adapters.sql_store.event_repository import EventRepository
 from kordevance.adapters.sql_store.goal_repository import GoalRepository
 from kordevance.adapters.sql_store.llm_provider_repository import LLMProviderRepository
@@ -14,6 +15,7 @@ from kordevance.adapters.sql_store.profile_repository import ProfileRepository
 from kordevance.adapters.sql_store.task_repository import TaskRepository
 from kordevance.application import _WORKING_DIRECTORY
 from kordevance.application.config.secrets import load_or_create_encryption_key
+from kordevance.domain.ports.device_registration_repository import DeviceRegistrationRepo
 from kordevance.domain.ports.encryptor import Encryptor
 from kordevance.domain.ports.event_repository import EventRepo
 from kordevance.domain.ports.goal_repository import GoalRepo
@@ -64,6 +66,10 @@ def get_task_repository() -> TaskRepo:
 
 def get_event_repository() -> EventRepo:
     return EventRepository(get_engine())
+
+
+def get_device_registration_repository() -> DeviceRegistrationRepo:
+    return DeviceRegistrationRepository(get_engine())
 
 
 ProfileRepoDep = Annotated[ProfileRepo, Depends(get_profile_repository)]

@@ -11,7 +11,7 @@ from kordevance.application.config.middleware import register_middlewares
 from kordevance.application.dependencies.proxy_relay_client import get_proxy_relay_client
 from kordevance.application.dependencies.scheduler import get_job_scheduler
 from kordevance.application.dependencies.secret_store_adapter import get_credential_manager
-from kordevance.application.dependencies.sql_store_adapter import init_db
+from kordevance.application.dependencies.sql_store_adapter import get_device_registration_repository, init_db
 from kordevance.application.routers.chat import router as chat_router
 from kordevance.application.routers.connectors import router as connectors_router
 from kordevance.application.routers.goals import router as goals_router
@@ -32,6 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     ensure_device_registered = HandleEnsureDeviceRegistered(
         credential_manager=get_credential_manager(),
         proxy_relay_client=get_proxy_relay_client(),
+        device_registration_repo=get_device_registration_repository(),
     )
 
     await ensure_device_registered.execute()
