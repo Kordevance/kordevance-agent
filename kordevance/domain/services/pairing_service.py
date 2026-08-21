@@ -3,12 +3,11 @@ import logging
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from kordevance.domain.datetime_utils import as_aware_utc
 from kordevance.domain.models.paired_device import PairedDevice
 from kordevance.domain.ports.claim_code_store import ClaimCodeStore
 from kordevance.domain.ports.paired_device_repository import PairedDeviceRepo
 from kordevance.domain.ports.pairing_invite_repository import PairingInviteRepo
-from kordevance.domain.security_utils import generate_device_token, generate_pairing_code, hash_secret
+from kordevance.domain.security_utils import generate_device_token, generate_short_token, hash_secret
 from kordevance.exceptions import UnauthorizedError
 
 _INVITE_TTL_MINUTES: int = 15
@@ -44,24 +43,20 @@ class PairingService:
             raise UnauthorizedError("Invalid claim code")
 
         token = generate_device_token()
-        await self._paired_device_repo.create(token_hash=hash_secret(token), is_owner=True)
+        await self._paired_device_repo.create_owner(token_hash=hash_secret(token))
         self._claim_code_store.invalidate()
         self._logger.info("Owner device registered")
         return token
 
     async def _register_invitee(self, code: str) -> str:
         candidate_hash = hash_secret(code)
-        now = datetime.now(UTC)
 
         for invite in await self._pairing_invite_repo.fetch_live():
             if not hmac.compare_digest(invite.code_hash, candidate_hash):
                 continue
-            if as_aware_utc(invite.expires_at) < now:
-                await self._pairing_invite_repo.delete(invite.id)
-                break
 
             token = generate_device_token()
-            await self._paired_device_repo.create(token_hash=hash_secret(token), is_owner=False)
+            await self._paired_device_repo.create_member(token_hash=hash_secret(token))
             await self._pairing_invite_repo.delete(invite.id)
             self._logger.info("Device paired via invite")
             return token
@@ -70,7 +65,7 @@ class PairingService:
         raise UnauthorizedError("Invalid or expired pairing code")
 
     async def create_invite(self) -> str:
-        code = generate_pairing_code()
+        code = generate_short_token()
         expires_at = datetime.now(UTC) + timedelta(minutes=_INVITE_TTL_MINUTES)
         await self._pairing_invite_repo.create(code_hash=hash_secret(code), expires_at=expires_at)
         return code

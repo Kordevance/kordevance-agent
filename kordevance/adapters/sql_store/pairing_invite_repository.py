@@ -21,7 +21,10 @@ class PairingInviteRepository(PairingInviteRepo):
 
     async def fetch_live(self) -> list[PairingInvite]:
         async with AsyncSession(self._engine) as session:
-            records = (await session.exec(select(PairingInviteRecord))).all()
+            now = datetime.now(UTC).replace(tzinfo=None)
+            records = (
+                await session.exec(select(PairingInviteRecord).where(col(PairingInviteRecord.expires_at) > now))
+            ).all()
             return [
                 PairingInvite(id=r.id, code_hash=r.code_hash, expires_at=r.expires_at, created_at=r.created_at)
                 for r in records
