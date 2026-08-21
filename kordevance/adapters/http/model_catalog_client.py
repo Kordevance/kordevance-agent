@@ -61,8 +61,8 @@ _PROVIDER_CATALOG_SPECS: dict[AuthorizedLLMProviders, _ProviderCatalogSpec] = {
     ),
     AuthorizedLLMProviders.Gemini: _ProviderCatalogSpec(
         path="/v1beta/models",
-        headers=lambda _: {},
-        params=lambda api_key: {"key": api_key},
+        headers=lambda api_key: {"x-goog-api-key": api_key},
+        params=_no_params,
         parse=_parse_gemini,
     ),
 }
