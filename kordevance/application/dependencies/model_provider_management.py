@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from kordevance.application.dependencies.sql_store_adapter import ModelProviderDep
+from kordevance.application.dependencies.sql_store_adapter import ModelAssignmentDep, ModelProviderDep
 from kordevance.domain.use_cases.llm_provider_management.handle_add_provider import HandleAddProvider
 from kordevance.domain.use_cases.llm_provider_management.handle_delete_provider import HandleDeleteProvider
 from kordevance.domain.use_cases.llm_provider_management.handle_fetch_provider import HandleFetchProvider
@@ -13,8 +13,10 @@ def get_add_provider_use_case(repository: ModelProviderDep) -> HandleAddProvider
     return HandleAddProvider(repository=repository)
 
 
-def get_delete_provider_use_case(repository: ModelProviderDep) -> HandleDeleteProvider:
-    return HandleDeleteProvider(repository=repository)
+def get_delete_provider_use_case(
+    repository: ModelProviderDep, model_assignment_repository: ModelAssignmentDep
+) -> HandleDeleteProvider:
+    return HandleDeleteProvider(repository=repository, model_assignment_repository=model_assignment_repository)
 
 
 def get_fetch_provider_use_case(repository: ModelProviderDep) -> HandleFetchProvider:
