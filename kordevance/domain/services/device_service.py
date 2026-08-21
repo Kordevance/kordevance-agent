@@ -2,6 +2,7 @@ import logging
 
 from kordevance.domain.models.device import Device
 from kordevance.domain.ports.credential_manager import CredManager
+from kordevance.exceptions import DeviceNotRegisteredError
 
 
 class DeviceService:
@@ -34,5 +35,5 @@ class DeviceService:
     def get_current_device(self) -> Device:
         device = self.get_device_details()
         if device is None:
-            raise ValueError("Could not load current device credentials")
+            raise DeviceNotRegisteredError("No device credentials are stored")
         return device

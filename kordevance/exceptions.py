@@ -11,3 +11,7 @@ class ConnectionMissingError(Exception):
     that tool's provider/category. (Re)authorize it via connections/session, then retry."""
 
     pass
+
+
+class DeviceNotRegisteredError(Exception):
+    pass
