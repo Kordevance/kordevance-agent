@@ -3,12 +3,20 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from pydantic_ai import Agent
-from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelMessagesTypeAdapter,
+    ModelRequest,
+    ModelResponse,
+    TextPart,
+    UserPromptPart,
+)
 
 from kordevance.adapters.agents.deps import GoalDefinitionDeps
 from kordevance.adapters.agents.goal_definition_agent import build_goal_definition_agent
 from kordevance.adapters.agents.model_resolver import ModelResolver
 from kordevance.adapters.agents.persona import AGENT_PERSONA
+from kordevance.domain.models.chat_turn import ChatTurn
 from kordevance.domain.models.model_role import ModelRole
 from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
 from kordevance.domain.ports.message_store import MessageStore
@@ -61,6 +69,20 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
             return
         payload = ModelMessagesTypeAdapter.dump_json(new_messages).decode("utf-8")
         await self._message_store.append(profile_id, conversation_id, payload)
+
+    async def get_history(self, profile_id: UUID, conversation_id: UUID) -> list[ChatTurn]:
+        messages = await self._load_history(profile_id, conversation_id)
+        turns: list[ChatTurn] = []
+        for message in messages:
+            if isinstance(message, ModelRequest):
+                for part in message.parts:
+                    if isinstance(part, UserPromptPart) and isinstance(part.content, str):
+                        turns.append(ChatTurn(role="user", content=part.content))
+            elif isinstance(message, ModelResponse):
+                for part in message.parts:
+                    if isinstance(part, TextPart):
+                        turns.append(ChatTurn(role="assistant", content=part.content))
+        return turns
 
     async def handle_message(self, profile_id: UUID, conversation_id: UUID, message: str) -> str:
         history = await self._load_history(profile_id, conversation_id)

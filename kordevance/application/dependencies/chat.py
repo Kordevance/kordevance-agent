@@ -10,6 +10,7 @@ from kordevance.application.dependencies.goal_management import CreateGoalUseCas
 from kordevance.application.dependencies.sql_store_adapter import ModelAssignmentDep, ModelProviderDep
 from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
 from kordevance.domain.use_cases.orchestration.handle_chat_orchestration import HandleChatOrchestration
+from kordevance.domain.use_cases.orchestration.handle_fetch_conversations import HandleFetchConversations
 
 
 def _get_chat_orchestrator(
@@ -34,4 +35,12 @@ def get_handle_chat_orchestration_use_case(
     return HandleChatOrchestration(chat_orchestrator)
 
 
+def get_fetch_conversations_use_case(
+    message_store: MessageStoreDep,
+    chat_orchestrator: Annotated[ChatOrchestrator, Depends(_get_chat_orchestrator)],
+) -> HandleFetchConversations:
+    return HandleFetchConversations(message_store, chat_orchestrator)
+
+
 ChatOrchestratorDep = Annotated[HandleChatOrchestration, Depends(get_handle_chat_orchestration_use_case)]
+FetchConversationsUseCaseDep = Annotated[HandleFetchConversations, Depends(get_fetch_conversations_use_case)]

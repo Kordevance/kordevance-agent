@@ -35,3 +35,20 @@ class JsonlMessageStore(MessageStore):
     def _read_lines(path: Path) -> list[str]:
         with path.open("r", encoding="utf-8") as f:
             return [line.strip() for line in f if line.strip()]
+
+    async def list_conversations(self, profile_id: UUID) -> list[UUID]:
+        profile_dir = await self._workspace.load_profile(profile_id)
+        conversations_dir = profile_dir.joinpath("conversations")
+        if not conversations_dir.exists():
+            return []
+        return await asyncio.to_thread(self._list_conversation_ids, conversations_dir)
+
+    @staticmethod
+    def _list_conversation_ids(conversations_dir: Path) -> list[UUID]:
+        conversation_ids = []
+        for path in conversations_dir.glob("*.jsonl"):
+            try:
+                conversation_ids.append(UUID(path.stem))
+            except ValueError:
+                continue
+        return conversation_ids

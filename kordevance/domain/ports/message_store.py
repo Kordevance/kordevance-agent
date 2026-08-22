@@ -14,3 +14,8 @@ class MessageStore(ABC):
     async def load_history(self, profile_id: UUID, conversation_id: UUID) -> list[str]:
         """Return every previously appended turn for this conversation, oldest first."""
         ...
+
+    @abstractmethod
+    async def list_conversations(self, profile_id: UUID) -> list[UUID]:
+        """Return the ids of every conversation recorded for this profile so far."""
+        ...
