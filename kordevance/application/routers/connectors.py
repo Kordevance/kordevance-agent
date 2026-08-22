@@ -39,8 +39,8 @@ async def register_connector(
 
 @router.delete("")
 async def delete_connector(
-    request: ConnectorRequest, service: DeleteConnectorsUseCaseDep, profile_id: UUID = Depends(get_profile_id)
+    provider: str, category: str, service: DeleteConnectorsUseCaseDep, profile_id: UUID = Depends(get_profile_id)
 ) -> None:
-    payload = Cr(profile_id=profile_id, provider=request.provider, category=request.category)
+    payload = Cr(profile_id=profile_id, provider=provider, category=category)
 
     return await service.execute(payload)
