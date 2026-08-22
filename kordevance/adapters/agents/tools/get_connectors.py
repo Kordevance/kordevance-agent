@@ -1,9 +1,9 @@
 from pydantic_ai import RunContext
 
-from kordevance.adapters.agents.deps import GoalDefinitionDeps
+from kordevance.adapters.agents.deps import HasConnectorLookup
 
 
-async def get_connector_status(ctx: RunContext[GoalDefinitionDeps]) -> str:
+async def get_connector_status(ctx: RunContext[HasConnectorLookup]) -> str:
     """Check which connectors the user actually has connected right now.
 
     Call this whenever the goal plausibly depends on a connector (e.g. tracking via a calendar

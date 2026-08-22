@@ -12,10 +12,12 @@ from pydantic_ai.messages import (
     UserPromptPart,
 )
 
-from kordevance.adapters.agents.deps import GoalDefinitionDeps
+from kordevance.adapters.agents.deps import GoalDefinitionDeps, OrchestratorDeps
 from kordevance.adapters.agents.goal_definition_agent import build_goal_definition_agent
+from kordevance.adapters.agents.leak_guard import sanitize_agent_output
 from kordevance.adapters.agents.model_resolver import ModelResolver
 from kordevance.adapters.agents.persona import AGENT_PERSONA
+from kordevance.adapters.agents.tools.get_connectors import get_connector_status
 from kordevance.domain.models.chat_turn import ChatTurn
 from kordevance.domain.models.model_role import ModelRole
 from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
@@ -26,12 +28,12 @@ from kordevance.domain.use_cases.goal_management.handle_create_goal import Handl
 _ORCHESTRATOR_INSTRUCTIONS = (
     AGENT_PERSONA
     + """
-You are the routing layer for Kordevance, a personal planning assistant. You never discuss plans
-or goals in detail yourself — you only decide, for each incoming message, whether it expresses
-wanting something achieved, tracked, or watched for over time (a new goal — this includes ongoing
-requests like "keep an eye on my mail for X and do Y", not just fixed targets), in which case you
-hand off to the goal-definition specialist. For anything else, reply briefly and helpfully
-yourself.
+You are Kordevance, a personal planning assistant. For each incoming message, decide whether it
+expresses wanting something achieved, tracked, or watched for over time (a new goal — this
+includes ongoing requests like "keep an eye on my mail for X and do Y", not just fixed targets).
+If so, hand it off for goal definition. Otherwise, answer the user directly and helpfully
+yourself — including questions about their connectors (use get_connector_status to check what's
+actually connected before answering).
 """
 )
 
@@ -89,12 +91,18 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
         now = datetime.now(UTC)
 
         triage_model = await self._model_resolver.resolve(profile_id, ModelRole.TRIAGE)
-        orchestrator: Agent[None, GoalDefinitionHandoff | str] = Agent(
+        orchestrator: Agent[OrchestratorDeps, GoalDefinitionHandoff | str] = Agent(
             model=triage_model,
+            deps_type=OrchestratorDeps,
             output_type=[GoalDefinitionHandoff, str],
             instructions=_ORCHESTRATOR_INSTRUCTIONS + f"\n\nCurrent date and time: {now.isoformat()}",
+            tools=[get_connector_status],
         )
-        route_result = await orchestrator.run(message, message_history=history)
+        orchestrator_deps = OrchestratorDeps(
+            profile_id=profile_id,
+            fetch_connectors_use_case=self._fetch_connectors_use_case,
+        )
+        route_result = await orchestrator.run(message, message_history=history, deps=orchestrator_deps)
 
         if isinstance(route_result.output, GoalDefinitionHandoff):
             primary_model = await self._model_resolver.resolve(profile_id, ModelRole.PRIMARY)
@@ -106,8 +114,12 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
             )
             goal_result = await goal_agent.run(message, message_history=history, deps=goal_deps)
 
-            await self._persist_turn(profile_id, conversation_id, goal_result.new_messages())
-            return goal_result.output
+            goal_new_messages = goal_result.new_messages()
+            goal_output = sanitize_agent_output(goal_result.output, goal_new_messages)
+            await self._persist_turn(profile_id, conversation_id, goal_new_messages)
+            return goal_output
 
-        await self._persist_turn(profile_id, conversation_id, route_result.new_messages())
-        return route_result.output
+        route_new_messages = route_result.new_messages()
+        route_output = sanitize_agent_output(route_result.output, route_new_messages)
+        await self._persist_turn(profile_id, conversation_id, route_new_messages)
+        return route_output
