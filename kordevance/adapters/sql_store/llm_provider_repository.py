@@ -34,6 +34,11 @@ class LLMProviderRepository(LLMProviderRepo):
         )
 
         async with AsyncSession(self._engine) as session:
+            await session.exec(
+                delete(LLMProviderRecord).where(
+                    col(LLMProviderRecord.profile_id) == profile_id, col(LLMProviderRecord.name) == provider.name
+                )
+            )
             session.add(record)
             await session.commit()
             await session.refresh(record)

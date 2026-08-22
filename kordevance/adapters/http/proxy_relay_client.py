@@ -30,7 +30,12 @@ class HttpProxyRelayClient(ProxyRelayClient):
             payload = response.json()
 
             return [
-                Connector(provider=entry["provider"], category=entry["integration"], active=entry["status_ok"])
+                Connector(
+                    provider=entry["provider"],
+                    category=entry["integration"],
+                    active=entry["status_ok"],
+                    icon=entry["icon"]
+                )
                 for entry in payload
             ]
 
