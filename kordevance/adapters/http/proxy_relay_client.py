@@ -52,7 +52,7 @@ class HttpProxyRelayClient(ProxyRelayClient):
             payload = {"integration": category, "provider": provider, "profile_id": str(profile_id)}
             response = await client.post(f"{self._base_url}/connections/session", headers=headers, json=payload)
             response.raise_for_status()
-            return response.text
+            return response.json()
 
     async def delete_connector(self, device: Device, profile_id: UUID, provider: str, category: str) -> None:
         headers = {"X-Device-Id": device.id, "X-Device-Secret": device.secret}
