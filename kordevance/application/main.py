@@ -18,6 +18,7 @@ from kordevance.application.routers.chat import router as chat_router
 from kordevance.application.routers.connectors import router as connectors_router
 from kordevance.application.routers.device import router as device_router
 from kordevance.application.routers.goals import router as goals_router
+from kordevance.application.routers.health import router as health_router
 from kordevance.application.routers.model_assignment import router as model_assignment_router
 from kordevance.application.routers.model_provider import router as provider_router
 from kordevance.application.routers.profile import router as profile_router
@@ -65,6 +66,7 @@ app = FastAPI(
 register_middlewares(app)
 register_exception_handlers(app)
 
+app.include_router(health_router)
 app.include_router(device_router)
 app.include_router(profile_router)
 app.include_router(provider_router)
