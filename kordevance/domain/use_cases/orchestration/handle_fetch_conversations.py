@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from kordevance.domain.contracts.use_case import UseCase
@@ -16,5 +17,6 @@ class HandleFetchConversations(UseCase[UUID, list[Conversation]]):
         conversations = []
         for conversation_id in conversation_ids:
             messages = await self._chat_orchestrator.get_history(request, conversation_id)
-            conversations.append(Conversation(id=conversation_id, messages=messages))
+            timestamp = max((turn.timestamp for turn in messages), default=datetime.min.replace(tzinfo=UTC))
+            conversations.append(Conversation(id=conversation_id, messages=messages, timestamp=timestamp))
         return conversations

@@ -32,5 +32,7 @@ async def get_conversations(
 ) -> ConversationsResponse:
     conversations = await service.execute(profile_id)
     return ConversationsResponse(
-        conversations=[ConversationResponse(id=c.id, messages=c.messages) for c in conversations]
+        conversations=[
+            ConversationResponse(id=c.id, messages=c.messages, timestamp=c.timestamp) for c in conversations
+        ]
     )

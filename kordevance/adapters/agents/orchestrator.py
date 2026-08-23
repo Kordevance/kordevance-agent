@@ -86,30 +86,35 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
         self._device_service: DeviceService = device_service
 
     async def _load_history(self, profile_id: UUID, conversation_id: UUID) -> list[ModelMessage]:
-        lines = await self._message_store.load_history(profile_id, conversation_id)
+        records = await self._message_store.load_history(profile_id, conversation_id)
         messages: list[ModelMessage] = []
-        for line in lines:
-            messages.extend(ModelMessagesTypeAdapter.validate_json(line))
+        for payload, _ in records:
+            messages.extend(ModelMessagesTypeAdapter.validate_json(payload))
         return messages
 
-    async def _persist_turn(self, profile_id: UUID, conversation_id: UUID, new_messages: list[ModelMessage]) -> None:
+    async def _persist_turn(
+        self, profile_id: UUID, conversation_id: UUID, new_messages: list[ModelMessage], timestamp: datetime
+    ) -> None:
         if not new_messages:
             return
         payload = ModelMessagesTypeAdapter.dump_json(new_messages).decode("utf-8")
-        await self._message_store.append(profile_id, conversation_id, payload)
+        await self._message_store.append(profile_id, conversation_id, payload, timestamp)
 
     async def get_history(self, profile_id: UUID, conversation_id: UUID) -> list[ChatTurn]:
-        messages = await self._load_history(profile_id, conversation_id)
+        records = await self._message_store.load_history(profile_id, conversation_id)
         turns: list[ChatTurn] = []
-        for message in messages:
-            if isinstance(message, ModelRequest):
-                for request_part in message.parts:
-                    if isinstance(request_part, UserPromptPart) and isinstance(request_part.content, str):
-                        turns.append(ChatTurn(role="user", content=request_part.content))
-            elif isinstance(message, ModelResponse):
-                for response_part in message.parts:
-                    if isinstance(response_part, TextPart):
-                        turns.append(ChatTurn(role="assistant", content=response_part.content))
+        for payload, timestamp in records:
+            for message in ModelMessagesTypeAdapter.validate_json(payload):
+                if isinstance(message, ModelRequest):
+                    for request_part in message.parts:
+                        if isinstance(request_part, UserPromptPart) and isinstance(request_part.content, str):
+                            turns.append(ChatTurn(role="user", content=request_part.content, timestamp=timestamp))
+                elif isinstance(message, ModelResponse):
+                    for response_part in message.parts:
+                        if isinstance(response_part, TextPart):
+                            turns.append(
+                                ChatTurn(role="assistant", content=response_part.content, timestamp=timestamp)
+                            )
         return turns
 
     async def handle_message(self, profile_id: UUID, conversation_id: UUID, message: str) -> str:
@@ -146,7 +151,7 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
 
             goal_new_messages = goal_result.new_messages()
             goal_output = sanitize_agent_output(goal_result.output, goal_new_messages)
-            await self._persist_turn(profile_id, conversation_id, goal_new_messages)
+            await self._persist_turn(profile_id, conversation_id, goal_new_messages, now)
             return goal_output
 
         if isinstance(route_result.output, GeneralQueryHandoff):
@@ -166,10 +171,10 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
 
             general_new_messages = general_result.new_messages()
             general_output = sanitize_agent_output(general_result.output, general_new_messages)
-            await self._persist_turn(profile_id, conversation_id, general_new_messages)
+            await self._persist_turn(profile_id, conversation_id, general_new_messages, now)
             return general_output
 
         route_new_messages = route_result.new_messages()
         route_output = sanitize_agent_output(route_result.output, route_new_messages)
-        await self._persist_turn(profile_id, conversation_id, route_new_messages)
+        await self._persist_turn(profile_id, conversation_id, route_new_messages, now)
         return route_output

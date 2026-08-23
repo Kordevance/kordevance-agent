@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -18,6 +19,7 @@ class ChatMessageResponse(BaseModel):
 class ConversationResponse(BaseModel):
     id: UUID
     messages: list[ChatTurn]
+    timestamp: datetime
 
 
 class ConversationsResponse(BaseModel):
