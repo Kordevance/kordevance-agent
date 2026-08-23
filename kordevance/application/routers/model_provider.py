@@ -24,9 +24,15 @@ router: APIRouter = APIRouter(prefix="/providers", tags=["providers"], dependenc
 async def add_provider(
     body: ModelProviderRequest, service: AddProviderUseCaseDep, profile_id: UUID = Depends(get_profile_id)
 ) -> ModelProviderResponse:
-    payload = AddProviderRequest(profile_id=profile_id, name=body.name, api_key=body.api_key, endpoint=body.endpoint)
+    payload = AddProviderRequest(
+        profile_id=profile_id,
+        name=body.name,
+        api_key=body.api_key,
+        endpoint=body.endpoint,
+        display_name=body.display_name,
+    )
     provider = await service.execute(payload)
-    return ModelProviderResponse(id=provider.id, name=provider.name)
+    return ModelProviderResponse.from_domain(provider)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -41,7 +47,7 @@ async def get_provider(
     id: UUID, service: GetProviderUseCaseDep, profile_id: UUID = Depends(get_profile_id)
 ) -> ModelProviderResponse:
     provider = await service.execute(GenericProviderRequest(profile_id=profile_id, provider_id=id))
-    return ModelProviderResponse(id=provider.id, name=provider.name)
+    return ModelProviderResponse.from_domain(provider)
 
 
 @router.get("")
@@ -49,7 +55,7 @@ async def get_all_providers(
     service: GetProvidersUseCaseDep, profile_id: UUID = Depends(get_profile_id)
 ) -> list[ModelProviderResponse]:
     providers = await service.execute(profile_id)
-    return [ModelProviderResponse(id=provider.id, name=provider.name) for provider in providers]
+    return [ModelProviderResponse.from_domain(provider) for provider in providers]
 
 
 @router.get("/{id}/models")

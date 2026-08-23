@@ -20,3 +20,4 @@ class LLMProvider(BaseModel):
     name: AuthorizedLLMProviders
     endpoint: str
     api_key: str
+    display_name: str | None = None

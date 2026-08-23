@@ -13,3 +13,4 @@ class LLMProviderRecord(SQLModel, table=True):
     name: AuthorizedLLMProviders
     endpoint: str
     api_key_encrypted: str
+    display_name: str | None = None

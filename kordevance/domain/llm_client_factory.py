@@ -27,6 +27,19 @@ class LLMProviderFactory:
             raise ValueError(f"No default endpoint configured for provider: {provider}") from err
 
     @classmethod
-    def build_client(cls, provider: AuthorizedLLMProviders, endpoint: str | None, api_key: str) -> LLMProvider:
-        endpoint = endpoint or cls._get_default_endpoint(provider)
-        return LLMProvider(name=provider, endpoint=endpoint, api_key=api_key)
+    def build_client(
+        cls,
+        provider: AuthorizedLLMProviders,
+        endpoint: str | None,
+        api_key: str,
+        display_name: str | None = None,
+    ) -> LLMProvider:
+        if provider == AuthorizedLLMProviders.Other:
+            if not endpoint:
+                raise ValueError("An endpoint is required for provider type 'other'")
+            if not display_name:
+                raise ValueError("A display name is required for provider type 'other'")
+        else:
+            endpoint = endpoint or cls._get_default_endpoint(provider)
+
+        return LLMProvider(name=provider, endpoint=endpoint, api_key=api_key, display_name=display_name)

@@ -5,7 +5,7 @@ from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from kordevance.adapters.sql_store.records.llm_provider_record import LLMProviderRecord
-from kordevance.domain.models.llm_provider import LLMProvider
+from kordevance.domain.models.llm_provider import AuthorizedLLMProviders, LLMProvider
 from kordevance.domain.ports.encryptor import Encryptor
 from kordevance.domain.ports.llm_provider_repository import LLMProviderRepo
 from kordevance.exceptions import ItemNotFoundError
@@ -22,6 +22,7 @@ class LLMProviderRepository(LLMProviderRepo):
             name=row.name,
             endpoint=row.endpoint,
             api_key=self._encryptor.decrypt(row.api_key_encrypted),
+            display_name=row.display_name,
         )
 
     async def save(self, profile_id: UUID, provider: LLMProvider) -> None:
@@ -31,14 +32,24 @@ class LLMProviderRepository(LLMProviderRepo):
             name=provider.name,
             endpoint=provider.endpoint,
             api_key_encrypted=self._encryptor.encrypt(provider.api_key),
+            display_name=provider.display_name,
         )
 
         async with AsyncSession(self._engine) as session:
-            await session.exec(
-                delete(LLMProviderRecord).where(
-                    col(LLMProviderRecord.profile_id) == profile_id, col(LLMProviderRecord.name) == provider.name
+            if provider.name == AuthorizedLLMProviders.Other:
+                await session.exec(
+                    delete(LLMProviderRecord).where(
+                        col(LLMProviderRecord.profile_id) == profile_id,
+                        col(LLMProviderRecord.name) == provider.name,
+                        col(LLMProviderRecord.display_name) == provider.display_name,
+                    )
                 )
-            )
+            else:
+                await session.exec(
+                    delete(LLMProviderRecord).where(
+                        col(LLMProviderRecord.profile_id) == profile_id, col(LLMProviderRecord.name) == provider.name
+                    )
+                )
             session.add(record)
             await session.commit()
             await session.refresh(record)

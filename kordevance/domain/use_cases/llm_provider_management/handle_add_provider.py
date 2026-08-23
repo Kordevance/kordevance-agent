@@ -22,7 +22,10 @@ class HandleAddProvider(UseCase[AddProviderRequest, LLMProvider]):
 
         try:
             provider = LLMProviderFactory.build_client(
-                provider=provider_type, endpoint=request.endpoint, api_key=request.api_key
+                provider=provider_type,
+                endpoint=request.endpoint,
+                api_key=request.api_key,
+                display_name=request.display_name,
             )
         except ValueError as err:
             raise BadRequestError(str(err)) from err

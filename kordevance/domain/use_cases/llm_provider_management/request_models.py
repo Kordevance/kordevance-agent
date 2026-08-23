@@ -8,6 +8,7 @@ class AddProviderRequest(BaseModel):
     name: str
     api_key: str
     endpoint: str | None = None
+    display_name: str | None = None
 
 
 class GenericProviderRequest(BaseModel):
