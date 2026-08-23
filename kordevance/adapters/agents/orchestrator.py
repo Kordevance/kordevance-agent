@@ -11,6 +11,7 @@ from pydantic_ai.messages import (
     TextPart,
     UserPromptPart,
 )
+from pydantic_ai.tools import Tool
 
 from kordevance.adapters.agents.deps import GoalDefinitionDeps, OrchestratorDeps
 from kordevance.adapters.agents.goal_definition_agent import build_goal_definition_agent
@@ -18,10 +19,14 @@ from kordevance.adapters.agents.leak_guard import sanitize_agent_output
 from kordevance.adapters.agents.model_resolver import ModelResolver
 from kordevance.adapters.agents.persona import AGENT_PERSONA
 from kordevance.adapters.agents.tools.get_connectors import get_connector_status
+from kordevance.adapters.agents.tools.get_current_datetime_tool import get_current_datetime
+from kordevance.adapters.agents.tools.proxy_relay_tools import build_callable_tools
 from kordevance.domain.models.chat_turn import ChatTurn
 from kordevance.domain.models.model_role import ModelRole
 from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
 from kordevance.domain.ports.message_store import MessageStore
+from kordevance.domain.ports.proxy_relay_client import ProxyRelayClient
+from kordevance.domain.services.device_service import DeviceService
 from kordevance.domain.use_cases.connectors_management.handle_fetch_connectors import HandleFetchConnectors
 from kordevance.domain.use_cases.goal_management.handle_create_goal import HandleCreateGoal
 
@@ -31,15 +36,32 @@ _ORCHESTRATOR_INSTRUCTIONS = (
 You are Kordevance, a personal planning assistant. For each incoming message, decide whether it
 expresses wanting something achieved, tracked, or watched for over time (a new goal — this
 includes ongoing requests like "keep an eye on my mail for X and do Y", not just fixed targets).
-If so, hand it off for goal definition. Otherwise, answer the user directly and helpfully
-yourself — including questions about their connectors (use get_connector_status to check what's
-actually connected before answering).
+If so, hand it off for goal definition. If it instead needs a real-world lookup you have no
+built-in knowledge of (e.g. current events, a web search, today's information), hand it off for a
+general query. Otherwise, answer the user directly and helpfully yourself — including questions
+about their connectors (use get_connector_status to check what's actually connected before
+answering).
+"""
+)
+
+_GENERAL_QUERY_INSTRUCTIONS = (
+    AGENT_PERSONA
+    + """
+You are Kordevance, a personal planning assistant. The user asked something that needs a
+real-world lookup. Use the tools available to you to find out what's actually true, then answer
+plainly and concisely. Don't invent an answer if your tools can't confirm it — say so instead.
 """
 )
 
 
 class GoalDefinitionHandoff(BaseModel):
     """Route this message to the goal-definition specialist."""
+
+    reason: str
+
+
+class GeneralQueryHandoff(BaseModel):
+    """Route this message to the general-query specialist."""
 
     reason: str
 
@@ -53,11 +75,15 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
         message_store: MessageStore,
         create_goal_use_case: HandleCreateGoal,
         fetch_connectors_use_case: HandleFetchConnectors,
+        proxy_relay_client: ProxyRelayClient,
+        device_service: DeviceService,
     ) -> None:
         self._model_resolver: ModelResolver = model_resolver
         self._message_store: MessageStore = message_store
         self._create_goal_use_case: HandleCreateGoal = create_goal_use_case
         self._fetch_connectors_use_case: HandleFetchConnectors = fetch_connectors_use_case
+        self._proxy_relay_client: ProxyRelayClient = proxy_relay_client
+        self._device_service: DeviceService = device_service
 
     async def _load_history(self, profile_id: UUID, conversation_id: UUID) -> list[ModelMessage]:
         lines = await self._message_store.load_history(profile_id, conversation_id)
@@ -77,13 +103,13 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
         turns: list[ChatTurn] = []
         for message in messages:
             if isinstance(message, ModelRequest):
-                for part in message.parts:
-                    if isinstance(part, UserPromptPart) and isinstance(part.content, str):
-                        turns.append(ChatTurn(role="user", content=part.content))
+                for request_part in message.parts:
+                    if isinstance(request_part, UserPromptPart) and isinstance(request_part.content, str):
+                        turns.append(ChatTurn(role="user", content=request_part.content))
             elif isinstance(message, ModelResponse):
-                for part in message.parts:
-                    if isinstance(part, TextPart):
-                        turns.append(ChatTurn(role="assistant", content=part.content))
+                for response_part in message.parts:
+                    if isinstance(response_part, TextPart):
+                        turns.append(ChatTurn(role="assistant", content=response_part.content))
         return turns
 
     async def handle_message(self, profile_id: UUID, conversation_id: UUID, message: str) -> str:
@@ -91,10 +117,10 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
         now = datetime.now(UTC)
 
         triage_model = await self._model_resolver.resolve(profile_id, ModelRole.TRIAGE)
-        orchestrator: Agent[OrchestratorDeps, GoalDefinitionHandoff | str] = Agent(
+        orchestrator: Agent[OrchestratorDeps, GoalDefinitionHandoff | GeneralQueryHandoff | str] = Agent(
             model=triage_model,
             deps_type=OrchestratorDeps,
-            output_type=[GoalDefinitionHandoff, str],
+            output_type=[GoalDefinitionHandoff, GeneralQueryHandoff, str],
             instructions=_ORCHESTRATOR_INSTRUCTIONS + f"\n\nCurrent date and time: {now.isoformat()}",
             tools=[get_connector_status],
         )
@@ -105,8 +131,12 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
         route_result = await orchestrator.run(message, message_history=history, deps=orchestrator_deps)
 
         if isinstance(route_result.output, GoalDefinitionHandoff):
+            device = self._device_service.get_current_device()
+            all_tools = await self._proxy_relay_client.get_available_tools(device, profile_id)
+            proxy_tools = build_callable_tools(all_tools, profile_id, device, self._proxy_relay_client)
+
             primary_model = await self._model_resolver.resolve(profile_id, ModelRole.PRIMARY)
-            goal_agent = build_goal_definition_agent(primary_model, now)
+            goal_agent = build_goal_definition_agent(primary_model, now, proxy_tools)
             goal_deps = GoalDefinitionDeps(
                 profile_id=profile_id,
                 create_goal_use_case=self._create_goal_use_case,
@@ -118,6 +148,26 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
             goal_output = sanitize_agent_output(goal_result.output, goal_new_messages)
             await self._persist_turn(profile_id, conversation_id, goal_new_messages)
             return goal_output
+
+        if isinstance(route_result.output, GeneralQueryHandoff):
+            device = self._device_service.get_current_device()
+            all_tools = await self._proxy_relay_client.get_available_tools(device, profile_id)
+            default_tools = [t for t in all_tools if t.is_default]
+            proxy_tools = build_callable_tools(default_tools, profile_id, device, self._proxy_relay_client)
+
+            discovery_model = await self._model_resolver.resolve(profile_id, ModelRole.DISCOVERY)
+            general_agent: Agent[None, str] = Agent(
+                model=discovery_model,
+                output_type=str,
+                instructions=_GENERAL_QUERY_INSTRUCTIONS + f"\n\nCurrent date and time: {now.isoformat()}",
+                tools=[*proxy_tools, Tool(get_current_datetime)],
+            )
+            general_result = await general_agent.run(message, message_history=history)
+
+            general_new_messages = general_result.new_messages()
+            general_output = sanitize_agent_output(general_result.output, general_new_messages)
+            await self._persist_turn(profile_id, conversation_id, general_new_messages)
+            return general_output
 
         route_new_messages = route_result.new_messages()
         route_output = sanitize_agent_output(route_result.output, route_new_messages)

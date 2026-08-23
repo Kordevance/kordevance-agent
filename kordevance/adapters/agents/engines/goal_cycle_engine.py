@@ -1,21 +1,19 @@
 import logging
-import re
 from datetime import UTC, datetime
-from typing import Any
 from uuid import UUID
 
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent
 from pydantic_ai.tools import Tool
 
 from kordevance.adapters.agents.model_resolver import ModelResolver
 from kordevance.adapters.agents.persona import AGENT_PERSONA
 from kordevance.adapters.agents.tools.get_current_datetime_tool import get_current_datetime
+from kordevance.adapters.agents.tools.proxy_relay_tools import build_callable_tools
 from kordevance.domain.models.goal import Goal
 from kordevance.domain.models.goal_cycle_finding import GoalCycleFinding
 from kordevance.domain.models.goal_cycle_triage import GoalCycleTriageDecision
 from kordevance.domain.models.model_role import ModelRole
 from kordevance.domain.models.task import Task
-from kordevance.domain.models.tool import ToolDefinition
 from kordevance.domain.ports.goal_cycle_engine import GoalCycleEngine
 from kordevance.domain.ports.proxy_relay_client import ProxyRelayClient
 from kordevance.domain.services.device_service import DeviceService
@@ -23,16 +21,6 @@ from kordevance.domain.services.device_service import DeviceService
 # Below this confidence on any candidate/completion, the draft goes to a PRIMARY-tier review pass
 # before being trusted (same threshold that would otherwise leave a task's status ambiguous.)
 _REVIEW_CONFIDENCE_THRESHOLD = 0.75
-
-# ProxyRelay tool names are dotted (e.g. "calendar.create_event") and some providers (e.g Anthropic)
-# reject that in a tool name (must match ^[a-zA-Z0-9_-]{1,128}$). Only the LLM-facing name needs
-# sanitizing. Note: The real dotted name is still what gets sent to execute_tool.
-_INVALID_TOOL_NAME_CHARS = re.compile(r"[^a-zA-Z0-9_-]")
-
-
-def _sanitize_tool_name(name: str) -> str:
-    return _INVALID_TOOL_NAME_CHARS.sub("_", name)[:128]
-
 
 _TRIAGE_INSTRUCTIONS = (
     AGENT_PERSONA
@@ -131,27 +119,6 @@ Deadline for a result: {(goal.due_date or goal.end_at).isoformat()}
 This is the FINAL attempt: {is_final_attempt}
 """
 
-    def _build_callable_tool(self, tool_def: ToolDefinition, profile_id: UUID, used_names: set[str]) -> Tool[None]:
-        async def _call(_ctx: RunContext[None], **kwargs: Any) -> Any:
-            device = self._device_service.get_current_device()
-            return await self._proxy_relay_client.execute_tool(device, profile_id, tool_def.name, dict(kwargs))
-
-        name = _sanitize_tool_name(tool_def.name)
-        if name in used_names:
-            suffix = 2
-            while f"{name}_{suffix}" in used_names:
-                suffix += 1
-            name = f"{name}_{suffix}"
-        used_names.add(name)
-
-        return Tool.from_schema(
-            function=_call,
-            name=name,
-            description=tool_def.description,
-            json_schema=tool_def.input_schema,
-            takes_ctx=True,
-        )
-
     async def _should_explore(
         self, goal: Goal, profile_id: UUID, existing_tasks: list[Task], is_final_attempt: bool
     ) -> GoalCycleTriageDecision:
@@ -174,10 +141,7 @@ This is the FINAL attempt: {is_final_attempt}
         device = self._device_service.get_current_device()
         all_tools = await self._proxy_relay_client.get_available_tools(device, profile_id)
 
-        used_names: set[str] = set()
-        callable_tools = [
-            self._build_callable_tool(t, profile_id, used_names) for t in all_tools if not t.requires_confirmation
-        ]
+        callable_tools = build_callable_tools(all_tools, profile_id, device, self._proxy_relay_client)
         confirmation_only_tools = [t for t in all_tools if t.requires_confirmation]
 
         if not callable_tools:

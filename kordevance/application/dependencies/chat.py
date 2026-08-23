@@ -7,8 +7,11 @@ from kordevance.adapters.agents.orchestrator import PydanticAIChatOrchestrator
 from kordevance.application.dependencies.connectors_management import FetchConnectorsUseCaseDep
 from kordevance.application.dependencies.fs_adapter import MessageStoreDep
 from kordevance.application.dependencies.goal_management import CreateGoalUseCaseDep
+from kordevance.application.dependencies.proxy_relay_client import get_proxy_relay_client
+from kordevance.application.dependencies.secret_store_adapter import get_credential_manager
 from kordevance.application.dependencies.sql_store_adapter import ModelAssignmentDep, ModelProviderDep
 from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
+from kordevance.domain.services.device_service import DeviceService
 from kordevance.domain.use_cases.orchestration.handle_chat_orchestration import HandleChatOrchestration
 from kordevance.domain.use_cases.orchestration.handle_fetch_conversations import HandleFetchConversations
 
@@ -26,6 +29,8 @@ def _get_chat_orchestrator(
         message_store=message_store,
         create_goal_use_case=create_goal_use_case,
         fetch_connectors_use_case=fetch_connectors_use_case,
+        proxy_relay_client=get_proxy_relay_client(),
+        device_service=DeviceService(store=get_credential_manager()),
     )
 
 

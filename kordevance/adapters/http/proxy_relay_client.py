@@ -34,7 +34,7 @@ class HttpProxyRelayClient(ProxyRelayClient):
                     provider=entry["provider"],
                     category=entry["integration"],
                     active=entry["status_ok"],
-                    icon=entry["icon"]
+                    icon=entry["icon"],
                 )
                 for entry in payload
             ]
@@ -57,7 +57,8 @@ class HttpProxyRelayClient(ProxyRelayClient):
             payload = {"integration": category, "provider": provider, "profile_id": str(profile_id)}
             response = await client.post(f"{self._base_url}/connections/session", headers=headers, json=payload)
             response.raise_for_status()
-            return response.json()
+            session_id: str = response.json()
+            return session_id
 
     async def delete_connector(self, device: Device, profile_id: UUID, provider: str, category: str) -> None:
         headers = {"X-Device-Id": device.id, "X-Device-Secret": device.secret}
@@ -74,7 +75,6 @@ class HttpProxyRelayClient(ProxyRelayClient):
             )
             response.raise_for_status()
             payload = response.json()
-
             return [
                 ToolDefinition(
                     name=entry["name"],
@@ -83,6 +83,7 @@ class HttpProxyRelayClient(ProxyRelayClient):
                     category=entry["category"],
                     requires_confirmation=entry["requires_confirmation"],
                     input_schema=entry["input_schema"],
+                    is_default=entry.get("is_default", False),
                 )
                 for entry in payload
             ]

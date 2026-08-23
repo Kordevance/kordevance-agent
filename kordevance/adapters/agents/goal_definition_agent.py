@@ -1,7 +1,9 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
+from pydantic_ai.tools import Tool
 
 from kordevance.adapters.agents.deps import GoalDefinitionDeps
 from kordevance.adapters.agents.persona import AGENT_PERSONA
@@ -46,15 +48,20 @@ Rules:
   - If nothing suitable is available at all, say so and ask the user how they'd like to track
     progress instead.
 - Keep replies short and conversational. Once the goal is created, confirm it plainly.
+- You may also have other tools available (e.g. web search) beyond the ones described above — use
+  them freely to look up whatever helps you pin down the goal's details. Tools marked as default are
+  valid and active.
 """
 )
 
 
-def build_goal_definition_agent(model: Model, current_datetime: datetime) -> Agent[GoalDefinitionDeps, str]:
+def build_goal_definition_agent(
+    model: Model, current_datetime: datetime, proxy_tools: list[Tool[Any]]
+) -> Agent[GoalDefinitionDeps, str]:
     return Agent(
         model=model,
         deps_type=GoalDefinitionDeps,
         output_type=str,
         instructions=_INSTRUCTIONS + f"\n\nCurrent date and time: {current_datetime.isoformat()}",
-        tools=[get_current_datetime, create_goal, get_connector_status],
+        tools=[get_current_datetime, create_goal, get_connector_status, *proxy_tools],
     )

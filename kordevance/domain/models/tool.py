@@ -17,3 +17,4 @@ class ToolDefinition(BaseModel):
     category: str
     requires_confirmation: bool
     input_schema: dict[str, Any]
+    is_default: bool = False
