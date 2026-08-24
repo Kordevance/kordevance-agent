@@ -13,7 +13,11 @@ def repair() -> None:
     click.confirm(
         click.style("[CAUTION] ", fg="yellow", bold=True)
         + "This removes every currently paired device (owner and members alike) and any pending invites."
-        + click.style("\nNOTE: Everything else is kept: profiles, chat history, connectors, and all other gateway data are untouched.", bold=True)
+        + click.style(
+            "\nNOTE: Everything else is kept: profiles, chat history, connectors, "
+            "and all other gateway data are untouched.",
+            bold=True,
+        )
         + "\nA new claim code will be generated so you can pair a fresh owner device.\n"
         + "Continue?",
         abort=True,

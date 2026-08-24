@@ -3,8 +3,8 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from kordevance import _APPLICATION_NAME
 from kordevance.adapters.secret_store.credential_manager import CredentialManager
-from kordevance.application import _APPLICATION_NAME
 from kordevance.application.config.instance import load_or_create_instance_id
 from kordevance.domain.ports.credential_manager import CredManager
 

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlmodel import col, select, delete
+from sqlmodel import col, delete, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from kordevance.adapters.sql_store.records.paired_device_record import PairedDeviceRecord

@@ -42,8 +42,8 @@ click.Context.formatter_class = StyledHelpFormatter
 def _resolve_version() -> str:
     try:
         return version(_APPLICATION_NAME)
-    except PackageNotFoundError:
-        raise PackageNotFoundError(f"Could not find package {_APPLICATION_NAME}")
+    except PackageNotFoundError as err:
+        raise PackageNotFoundError(f"Could not find package {_APPLICATION_NAME}") from err
 
 
 __version__: str = _resolve_version()
