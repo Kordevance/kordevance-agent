@@ -27,3 +27,9 @@ class LocalProfileWorkspace(ProfileWorkspace):
         path.mkdir(parents=True, exist_ok=True, mode=0o700)
         path.chmod(0o700)
         return path
+
+    async def delete_all(self) -> None:
+        if self._base_dir.exists():
+            shutil.rmtree(self._base_dir)
+        self._base_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self._base_dir.chmod(0o700)

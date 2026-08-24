@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlmodel import col, select
+from sqlmodel import col, select, delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from kordevance.adapters.sql_store.records.paired_device_record import PairedDeviceRecord
@@ -70,4 +70,9 @@ class PairedDeviceRepository(PairedDeviceRepo):
 
             record.is_owner = is_owner
             session.add(record)
+            await session.commit()
+
+    async def delete_all(self) -> None:
+        async with AsyncSession(self._engine) as session:
+            await session.exec(delete(PairedDeviceRecord))
             await session.commit()

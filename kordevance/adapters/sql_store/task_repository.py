@@ -117,3 +117,8 @@ class TaskRepository(TaskRepo):
                 delete(TaskRecord).where(col(TaskRecord.profile_id) == profile_id, col(TaskRecord.goal_id) == goal_id)
             )
             await session.commit()
+
+    async def delete_all(self) -> None:
+        async with AsyncSession(self._engine) as session:
+            await session.exec(delete(TaskRecord))
+            await session.commit()

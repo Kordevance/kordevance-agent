@@ -106,3 +106,8 @@ class EventRepository(EventRepo):
                 )
             )
             await session.commit()
+
+    async def delete_all(self) -> None:
+        async with AsyncSession(self._engine) as session:
+            await session.exec(delete(EventRecord))
+            await session.commit()

@@ -120,3 +120,8 @@ class GoalRepository(GoalRepo):
 
             if result.rowcount == 0:
                 raise ItemNotFoundError(f"Could not find a goal with ID: {goal_id}")
+
+    async def delete_all(self) -> None:
+        async with AsyncSession(self._engine) as session:
+            await session.exec(delete(GoalRecord))
+            await session.commit()

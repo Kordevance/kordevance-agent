@@ -5,7 +5,7 @@ from importlib.metadata import version
 
 from fastapi import FastAPI
 
-from kordevance.application import _APPLICATION_NAME
+from kordevance import _APPLICATION_NAME
 from kordevance.application.config.exception_handlers import register_exception_handlers
 from kordevance.application.config.logs import setup_logging
 from kordevance.application.config.middleware import register_middlewares
@@ -56,7 +56,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title=f"{_APPLICATION_NAME} API",
-    description=f"REST API for the {_APPLICATION_NAME.lower()} platform",
+    description=f"REST API for the {_APPLICATION_NAME.lower()} gateway",
     version=version(_APPLICATION_NAME),
     root_path="/api",
     lifespan=lifespan,

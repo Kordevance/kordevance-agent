@@ -14,3 +14,8 @@ class FileClaimCodeStore(ClaimCodeStore):
 
     def invalidate(self) -> None:
         self._path.unlink(missing_ok=True)
+
+    def peek(self) -> str | None:
+        if not self._path.exists():
+            return None
+        return self._path.read_text().strip()

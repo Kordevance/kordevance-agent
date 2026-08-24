@@ -18,3 +18,8 @@ class ProfileWorkspace(ABC):
     async def load_profile(self, profile_id: UUID) -> Path:
         """Return the profile's workspace directory, ensuring it exists first."""
         ...
+
+    @abstractmethod
+    async def delete_all(self) -> None:
+        """Remove every profile's workspace directory and everything under it."""
+        ...

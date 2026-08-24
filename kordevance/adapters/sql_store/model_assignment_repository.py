@@ -79,3 +79,8 @@ class ModelAssignmentRepository(ModelAssignmentRepo):
             ).all()
 
             return [ModelAssignment(role=row.role, provider_id=row.provider_id, model_id=row.model_id) for row in rows]
+
+    async def delete_all(self) -> None:
+        async with AsyncSession(self._engine) as session:
+            await session.exec(delete(ModelAssignmentRecord))
+            await session.commit()

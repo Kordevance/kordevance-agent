@@ -23,7 +23,12 @@ dependencies = [
     "httpx (>=0.28.1,<1.0.0)",
     "keyring (>=25.7.0,<26.0.0)",
     "apscheduler (>=3.11.3,<4.0.0)",
+    "click (>=8.4.2,<9.0.0)",
 ]
+
+[project.scripts]
+kordevance-gateway = "kordevance.gateway_runner:main"
+kordi = "kordevance.cli.main:cli"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -35,6 +40,9 @@ dev = [
     "ruff (>=0.16.2,<0.17.0)",
     "mypy (>=2.3.0,<3.0.0)",
     "import-linter (>=2.13,<3.0)"
+]
+packaging = [
+    "pyinstaller (>=6.11.0,<7.0.0)"
 ]
 
 [tool.ruff]
@@ -87,6 +95,7 @@ typecheck = {cmd = "mypy"}
 boundaries = {cmd = "lint-imports"}
 check = ["lint", "typecheck", "boundaries"]
 serve = {cmd = "gunicorn kordevance.application.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8080 --reload"}
+bundle = {cmd = "pyinstaller packaging/gateway.spec --noconfirm --clean"}
 
 [tool.importlinter]
 root_package = "kordevance"

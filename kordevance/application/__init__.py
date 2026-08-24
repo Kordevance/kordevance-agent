@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-_APPLICATION_NAME: str = "kordevance"
+from kordevance import _APPLICATION_NAME
 
 # Every file this process creates is born owner-only
 os.umask(0o077)

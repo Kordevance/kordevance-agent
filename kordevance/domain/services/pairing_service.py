@@ -31,6 +31,9 @@ class PairingService:
     async def get_or_create_claim_code(self) -> str:
         return self._claim_code_store.get_or_create()
 
+    async def peek_claim_code(self) -> str | None:
+        return self._claim_code_store.peek()
+
     async def register(self, code: str) -> str:
         if not await self._paired_device_repo.exists_any():
             return await self._register_owner(code)
@@ -81,3 +84,16 @@ class PairingService:
         if device is None:
             raise UnauthorizedError("Invalid or missing device token")
         return device
+
+    async def repair(self) -> str | None:
+        self._logger.info("Attempting to repair the gateway...")
+        await self._pairing_invite_repo.delete_all()
+        await self._paired_device_repo.delete_all()
+
+        if await self.has_registered_owner():
+            self._logger.error("Gateway repair failed. A registered owner was still found after DB wipe")
+            return None
+
+        code = await self.get_or_create_claim_code()
+        self._logger.info("Repair completed. Claim code: %s", code)
+        return code

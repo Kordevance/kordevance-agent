@@ -54,3 +54,8 @@ class ProfileRepository(ProfileRepo):
 
             if result.rowcount == 0:
                 raise ItemNotFoundError(f"Could not find any profile with ID: {profile.id}")
+
+    async def delete_all(self) -> None:
+        async with AsyncSession(self._engine) as session:
+            await session.exec(delete(ProfileRecord))
+            await session.commit()
