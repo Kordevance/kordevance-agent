@@ -112,9 +112,7 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
                 elif isinstance(message, ModelResponse):
                     for response_part in message.parts:
                         if isinstance(response_part, TextPart):
-                            turns.append(
-                                ChatTurn(role="assistant", content=response_part.content, timestamp=timestamp)
-                            )
+                            turns.append(ChatTurn(role="assistant", content=response_part.content, timestamp=timestamp))
         return turns
 
     async def handle_message(self, profile_id: UUID, conversation_id: UUID, message: str) -> str:

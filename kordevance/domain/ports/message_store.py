@@ -7,9 +7,7 @@ class MessageStore(ABC):
     """Persists conversation turns as pre-serialized JSON strings"""
 
     @abstractmethod
-    async def append(
-        self, profile_id: UUID, conversation_id: UUID, message_json: str, timestamp: datetime
-    ) -> None:
+    async def append(self, profile_id: UUID, conversation_id: UUID, message_json: str, timestamp: datetime) -> None:
         """Append one already-serialized turn to the conversation's history."""
         ...
 

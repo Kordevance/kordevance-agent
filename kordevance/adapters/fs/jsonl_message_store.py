@@ -18,9 +18,7 @@ class JsonlMessageStore(MessageStore):
         conversations_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         return conversations_dir.joinpath(f"{conversation_id}.jsonl")
 
-    async def append(
-        self, profile_id: UUID, conversation_id: UUID, message_json: str, timestamp: datetime
-    ) -> None:
+    async def append(self, profile_id: UUID, conversation_id: UUID, message_json: str, timestamp: datetime) -> None:
         path = await self._conversation_file(profile_id, conversation_id)
         await asyncio.to_thread(self._append_line, path, message_json, timestamp)
 
