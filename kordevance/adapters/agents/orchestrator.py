@@ -18,6 +18,7 @@ from kordevance.adapters.agents.goal_definition_agent import build_goal_definiti
 from kordevance.adapters.agents.leak_guard import sanitize_agent_output
 from kordevance.adapters.agents.model_resolver import ModelResolver
 from kordevance.adapters.agents.persona import AGENT_PERSONA
+from kordevance.adapters.agents.time_context import describe_current_datetime
 from kordevance.adapters.agents.tools.get_connectors import get_connector_status
 from kordevance.adapters.agents.tools.get_current_datetime_tool import get_current_datetime
 from kordevance.adapters.agents.tools.proxy_relay_tools import build_callable_tools
@@ -33,23 +34,30 @@ from kordevance.domain.use_cases.goal_management.handle_create_goal import Handl
 _ORCHESTRATOR_INSTRUCTIONS = (
     AGENT_PERSONA
     + """
-You are Kordevance, a personal planning assistant. For each incoming message, decide whether it
-expresses wanting something achieved, tracked, or watched for over time (a new goal — this
-includes ongoing requests like "keep an eye on my mail for X and do Y", not just fixed targets).
-If so, hand it off for goal definition. If it instead needs a real-world lookup you have no
-built-in knowledge of (e.g. current events, a web search, today's information), hand it off for a
-general query. Otherwise, answer the user directly and helpfully yourself — including questions
-about their connectors (use get_connector_status to check what's actually connected before
-answering).
+[ROLE & PURPOSE]
+You are Kori, the primary interface for Kordevance. For every incoming user message, evaluate the intent and choose the correct handling path.
+
+[ROUTING PATHS]
+1. GOAL DEFINITION: Route here if the user wants to achieve, track, monitor, or watch something over time. This includes both fixed targets and ongoing requests (e.g., "keep an eye on my email for X and do Y").
+2. GENERAL QUERY: Route here if the request requires real-world lookups, live information, current events, or web searches.
+3. DIRECT RESPONSE: Handle the message yourself if it is general conversation or a question about their active connectors. Before answering connector questions, call `get_connector_status` to verify state.
+
+[CRITICAL CONSTRAINTS]
+- Adhere strictly to your texting persona when generating text for the user.
+- Never state internal path names, function names, or routing logic in user-facing text.
 """
 )
 
 _GENERAL_QUERY_INSTRUCTIONS = (
     AGENT_PERSONA
     + """
-You are Kordevance, a personal planning assistant. The user asked something that needs a
-real-world lookup. Use the tools available to you to find out what's actually true, then answer
-plainly and concisely. Don't invent an answer if your tools can't confirm it — say so instead.
+[ROLE & PURPOSE]
+You are Kori answering a user request that requires real-world information.
+
+[EXECUTION RULES]
+1. TOOL GROUNDING: Use available tools to look up real-world facts before formulating an answer.
+2. ACCURACY: Base your answer strictly on tool output. If tools cannot confirm the answer or return no data, state plainly that you cannot find that information right now. Never invent facts.
+3. OUTPUT STYLE: State the finding concisely and plainly in your texting persona.
 """
 )
 
@@ -115,16 +123,19 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
                             turns.append(ChatTurn(role="assistant", content=response_part.content, timestamp=timestamp))
         return turns
 
-    async def handle_message(self, profile_id: UUID, conversation_id: UUID, message: str) -> str:
+    async def handle_message(
+        self, profile_id: UUID, conversation_id: UUID, message: str, timezone: str | None = None
+    ) -> str:
         history = await self._load_history(profile_id, conversation_id)
         now = datetime.now(UTC)
+        current_datetime_line = describe_current_datetime(now, timezone)
 
         triage_model = await self._model_resolver.resolve(profile_id, ModelRole.TRIAGE)
         orchestrator: Agent[OrchestratorDeps, GoalDefinitionHandoff | GeneralQueryHandoff | str] = Agent(
             model=triage_model,
             deps_type=OrchestratorDeps,
             output_type=[GoalDefinitionHandoff, GeneralQueryHandoff, str],
-            instructions=_ORCHESTRATOR_INSTRUCTIONS + f"\n\nCurrent date and time: {now.isoformat()}",
+            instructions=_ORCHESTRATOR_INSTRUCTIONS + f"\n\nCurrent date and time: {current_datetime_line}",
             tools=[get_connector_status],
         )
         orchestrator_deps = OrchestratorDeps(
@@ -139,7 +150,7 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
             proxy_tools = build_callable_tools(all_tools, profile_id, device, self._proxy_relay_client)
 
             primary_model = await self._model_resolver.resolve(profile_id, ModelRole.PRIMARY)
-            goal_agent = build_goal_definition_agent(primary_model, now, proxy_tools)
+            goal_agent = build_goal_definition_agent(primary_model, now, proxy_tools, timezone)
             goal_deps = GoalDefinitionDeps(
                 profile_id=profile_id,
                 create_goal_use_case=self._create_goal_use_case,
@@ -162,7 +173,7 @@ class PydanticAIChatOrchestrator(ChatOrchestrator):
             general_agent: Agent[None, str] = Agent(
                 model=discovery_model,
                 output_type=str,
-                instructions=_GENERAL_QUERY_INSTRUCTIONS + f"\n\nCurrent date and time: {now.isoformat()}",
+                instructions=_GENERAL_QUERY_INSTRUCTIONS + f"\n\nCurrent date and time: {current_datetime_line}",
                 tools=[*proxy_tools, Tool(get_current_datetime)],
             )
             general_result = await general_agent.run(message, message_history=history)

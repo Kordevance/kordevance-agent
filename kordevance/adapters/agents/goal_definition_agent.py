@@ -7,6 +7,7 @@ from pydantic_ai.tools import Tool
 
 from kordevance.adapters.agents.deps import GoalDefinitionDeps
 from kordevance.adapters.agents.persona import AGENT_PERSONA
+from kordevance.adapters.agents.time_context import describe_current_datetime
 from kordevance.adapters.agents.tools.create_goal_tool import create_goal
 from kordevance.adapters.agents.tools.get_connectors import get_connector_status
 from kordevance.adapters.agents.tools.get_current_datetime_tool import get_current_datetime
@@ -37,6 +38,14 @@ Rules:
   the current date only when the resulting date is unambiguous; otherwise ask instead of guessing.
 - Never call create_goal until every required field has a confident, user-confirmed value. If
   something is missing or ambiguous, ask for exactly what's missing in your reply. Do not guess.
+- Completeness isn't just about the create_goal fields — it's about whether the goal is actually
+  actionable. Before creating it, work out what concrete, domain-specific facts whatever executes
+  this goal will need (e.g. for a flight/travel goal: a specific departure city/airport and a
+  specific destination city/airport, not just a country; for exam prep: which exam or course, etc).
+  Treat any such fact the user hasn't stated as missing, exactly like an unconfirmed date — ask
+  for it rather than letting a vague or partial answer (like a country instead of a city) pass
+  through. Fold the confirmed specifics into title/description in enough detail that someone
+  reading only the goal, with no memory of this conversation, could act on it.
 - If the goal plausibly depends on a connector (e.g. tracking via a calendar or a fitness app),
   call get_connector_status to see what's actually connected and what's available but not yet
   connected. Never take the user's word for connection status — check it.
@@ -56,12 +65,13 @@ Rules:
 
 
 def build_goal_definition_agent(
-    model: Model, current_datetime: datetime, proxy_tools: list[Tool[Any]]
+    model: Model, current_datetime: datetime, proxy_tools: list[Tool[Any]], user_timezone: str | None = None
 ) -> Agent[GoalDefinitionDeps, str]:
     return Agent(
         model=model,
         deps_type=GoalDefinitionDeps,
         output_type=str,
-        instructions=_INSTRUCTIONS + f"\n\nCurrent date and time: {current_datetime.isoformat()}",
+        instructions=_INSTRUCTIONS
+        + f"\n\nCurrent date and time: {describe_current_datetime(current_datetime, user_timezone)}",
         tools=[get_current_datetime, create_goal, get_connector_status, *proxy_tools],
     )

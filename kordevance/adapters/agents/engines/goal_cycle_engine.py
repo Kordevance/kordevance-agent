@@ -6,7 +6,6 @@ from pydantic_ai import Agent
 from pydantic_ai.tools import Tool
 
 from kordevance.adapters.agents.model_resolver import ModelResolver
-from kordevance.adapters.agents.persona import AGENT_PERSONA
 from kordevance.adapters.agents.tools.get_current_datetime_tool import get_current_datetime
 from kordevance.adapters.agents.tools.proxy_relay_tools import build_callable_tools
 from kordevance.domain.models.goal import Goal
@@ -22,67 +21,45 @@ from kordevance.domain.services.device_service import DeviceService
 # before being trusted (same threshold that would otherwise leave a task's status ambiguous.)
 _REVIEW_CONFIDENCE_THRESHOLD = 0.75
 
-_TRIAGE_INSTRUCTIONS = (
-    AGENT_PERSONA
-    + """
-You decide whether a personal planning goal is worth spending a real reasoning turn on right now,
-during one scheduled check-in. You have no tools — decide from the goal and its current tasks
-alone.
+_TRIAGE_INSTRUCTIONS = """[ROLE & CONTEXT]
+You are a conservative triage evaluator for a goal-cycle engine. You decide if a goal requires active inspection during this scheduled check-in. You have no tool access.
 
-Say should_explore=True only if there's a concrete reason to look for something new or to check on
-existing tasks right now (e.g. a task is pending with no attempt yet, or enough may plausibly have
-changed since the last check). Say False when there's nothing new to look for and nothing pending
-that recently checking again would help — most checks should come back False. Be conservative:
-false negatives cost nothing (there will be another check-in), false positives cost a real turn.
+[OBJECTIVE]
+Determine whether spending a reasoning turn is necessary based strictly on the goal definition and its current tasks.
+
+[EVALUATION RULES]
+- Return should_explore = True ONLY IF there is a concrete, immediate reason to inspect external state (e.g., a pending task has zero prior attempts, or external state is likely to have changed).
+- Return should_explore = False IF no tasks are pending and no state changes are expected.
+- DEFAULT TO FALSE. False negatives cost nothing because another check-in will occur later. False positives waste real computational cycles.
 """
-)
 
-_EXPLORE_INSTRUCTIONS = (
-    AGENT_PERSONA
-    + """
-You are the goal-cycle engine for Kordevance, a personal planning assistant. Given a goal, its
-preferences, its current tasks, and whatever tools are available for it, use those tools to find
-out what's actually true right now and report back.
 
-This covers two kinds of outcome in one pass, whichever the tools available make possible:
-- New candidates: something that satisfies the goal and wasn't known before (e.g. a course, a
-  flight). Only propose one as a genuine match if it actually satisfies the goal's stated
-  preferences/constraints — a mediocre option isn't worth surfacing on an ordinary cycle. Never
-  repeat a candidate already listed under "already surfaced".
-- Completed tasks: clear evidence (via a tool) that one of the existing tasks is now done.
-  "Clear evidence" means don't guess from something ambiguous — leave it alone if unsure.
+_EXPLORE_INSTRUCTIONS = """[ROLE & CONTEXT]
+You are the goal-cycle execution engine for Kordevance. Given a goal, its preferences, current tasks, and available tools, inspect real-world state and compute updates.
 
-Rules:
-- Use the available tools to find out — don't invent results.
-- Never invent a detail that wasn't actually stated by the source or the goal. If a source gives a
-  date but no time, do not fabricate a specific time (e.g. defaulting to 22:00 for a task whose
-  source only said "Thursday") — that manufactures false precision. When a calendar-style tool
-  needs start/end datetimes and you only actually know the date, span the whole day instead of
-  guessing a time: start = that date at 00:00, end = that date at 23:59. Say plainly in the
-  summary that the exact time wasn't given. The same principle applies to any other field: stay
-  exactly as precise as the source actually was, never more.
-- Tools listed as "requires confirmation" are not callable — never attempt to call them. Only
-  describe what you'd want to do with one, in your summary, so the user can confirm it later.
-- If this is explicitly marked as the FINAL attempt, you must return your best available
-  candidates even if none fully satisfy the preferences — say so plainly in the summary. Otherwise
-  return nothing rather than a weak match; there will be another cycle.
+[PERMITTED OUTCOMES]
+1. New Candidates: Identify new items satisfying goal constraints. Propose a candidate ONLY IF it meets all stated preferences. Reject mediocre options. Do not re-propose items listed under "already surfaced".
+2. Completed Tasks: Verify task completion using direct tool evidence. Require clear proof before marking a task complete.
+
+[CRITICAL CONSTRAINTS]
+- TOOL GROUNDING: Base findings strictly on tool outputs. Never invent facts, entities, or parameters.
+- PRECISION MATCHING: Match the exact granularity provided by the source. If a source gives a date without a specific time, do not invent a time. Represent all-day items by spanning 00:00 to 23:59, and explicitly state in the summary that exact time precision was missing.
+- UNCONFIRMED TOOLS: Never attempt to call tools marked "requires confirmation". Describe the intended action in your summary payload so the orchestrator can request user confirmation.
+- FINAL ATTEMPT OVERRIDE: If flagged as the FINAL attempt, return the best available candidates even if preferences are partially met, and state this trade-off clearly in the summary payload. Otherwise, return nothing if matches are weak.
 """
-)
 
-_REVIEW_INSTRUCTIONS = (
-    AGENT_PERSONA
-    + """
-You are reviewing a draft finding from a goal-cycle engine before it gets acted on. It was flagged
-for review because it contains a low-confidence candidate or task-completion signal, or because
-this was a final attempt. You have no tools — judge only from the goal, its tasks, and the draft.
 
-Return a revised finding: drop or adjust anything that doesn't actually hold up, keep anything
-that does. If the draft is already sound, return it unchanged. Never raise a candidate's or a
-completion's confidence beyond what the draft's own summary actually supports. Also check for
-invented precision — a specific time, amount, or detail presented as fact when the draft's own
-summary only supports something vaguer — and correct it back to what the evidence actually shows.
+_REVIEW_INSTRUCTIONS = """[ROLE & CONTEXT]
+You are the quality auditor for draft goal findings. You judge findings flagged for low confidence or final-attempt status before they are saved or acted upon. You have no tool access.
+
+[OBJECTIVE]
+Review the draft payload against the goal and tasks, then return a revised finding payload.
+
+[AUDIT RULES]
+- EVIDENCE VERIFICATION: Drop or adjust any candidate or task-completion signal that is not fully supported by the draft evidence. Keep valid findings unchanged.
+- CONFIDENCE CAP: Never raise confidence or certainty levels beyond what the draft summary explicitly supports.
+- PRECISION AUDIT: Scan for fabricated precision (such as specific times, budgets, or locations presented as fact when the evidence is vague). Correct fabricated details back to the actual precision level shown in the evidence.
 """
-)
 
 
 class PydanticAIGoalCycleEngine(GoalCycleEngine):
@@ -111,19 +88,19 @@ class PydanticAIGoalCycleEngine(GoalCycleEngine):
     @staticmethod
     def _goal_context(goal: Goal, is_final_attempt: bool) -> str:
         return f"""
-Current date and time: {datetime.now(UTC).isoformat()}
-Goal: {goal.title}
-Goal description/preferences: {goal.description or "(none)"}
-Goal domain: {goal.domain}
-Deadline for a result: {(goal.due_date or goal.end_at).isoformat()}
-This is the FINAL attempt: {is_final_attempt}
-"""
+                    Current date and time: {datetime.now(UTC).isoformat()}
+                    Goal: {goal.title}
+                    Goal description/preferences: {goal.description or "(none)"}
+                    Goal domain: {goal.domain}
+                    Deadline for a result: {(goal.due_date or goal.end_at).isoformat()}
+                    This is the FINAL attempt: {is_final_attempt}
+                """
 
     async def _should_explore(
         self, goal: Goal, profile_id: UUID, existing_tasks: list[Task], is_final_attempt: bool
     ) -> GoalCycleTriageDecision:
         if is_final_attempt:
-            return GoalCycleTriageDecision(should_explore=True, reason="Final attempt — always explore.")
+            return GoalCycleTriageDecision(should_explore=True, reason="Final attempt, always explore.")
 
         model = await self._model_resolver.resolve(profile_id, ModelRole.TRIAGE)
         agent: Agent[None, GoalCycleTriageDecision] = Agent(

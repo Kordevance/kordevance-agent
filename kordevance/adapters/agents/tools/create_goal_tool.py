@@ -21,30 +21,34 @@ async def create_goal(
     target_value: float | None = None,
     required_connectors: list[Connector] | None = None,
 ) -> str:
-    """Create the goal once every required field has a confident, user-confirmed value.
+    """Create a new goal only when all necessary execution context has been gathered.
 
-    Do not call this while any information is missing, ambiguous, or unconfirmed by the user.
-    Ask a clarifying question in your normal response instead. Every connector listed in
-    required_connectors must be either genuinely connected (per get_connector_status) or
-    explicitly waived by the user in the conversation before this is called.
+    CRITICAL CONSTRAINT: Before calling this tool, you must evaluate the user's request.
+    If a separate agent were to read only the title and description, would they have enough
+    specific information to execute the task without asking follow-up questions?
+    If the answer is no (e.g., the user gave a broad intent but omitted necessary locations,
+    budgets, specific subjects, or constraints), do not call this tool. Ask clarifying
+    questions first.
+
+    Every connector listed in required_connectors must be genuinely connected or explicitly
+    waived by the user before calling this function.
 
     Args:
         ctx: Run context carrying the profile and the goal-creation use case.
-        title: Short, human-readable name for the goal.
-        domain: Free-text label for what kind of goal this is, e.g. "exam_prep", "fitness".
+        title: A short, human-readable name for the goal.
+        domain: A free-text categorical label for the goal type.
         start_at: ISO 8601 datetime the goal work begins.
-        end_at: ISO 8601 datetime of the goal's hard deadline.
-        horizon_granularity: Optional. Only set this when the user explicitly wants checks paced
-            no more than roughly once a day/week/month rather than on the normal cadence — e.g.
-            "just check in on this once a month". Leave unset otherwise; do not infer one from
-            the goal's topic or duration.
+        end_at: ISO 8601 datetime of the goal's final hard deadline.
+        horizon_granularity: Optional. Set this only if the user explicitly requests a
+            specific check-in cadence (daily, weekly, monthly). Do not infer this from
+            the domain. Leave unset by default.
         progress_metric_type: How progress is measured.
-        description: Optional longer description of the goal.
-        due_date: Optional ISO 8601 datetime for a decision/action deadline that is earlier than
-            end_at — set this only when the user names a date by which they need an answer or
-            result, separate from the goal's own end date (e.g. "find me flights for a trip in
-            December, but tell me what you've got by November 12th" -> due_date is November 12th,
-            end_at is the trip's own end). Leave unset when no such earlier deadline was named.
+        description: A comprehensive, self-contained brief of the goal. This must include
+            all domain-specific facts, constraints, and parameters gathered from the user
+            that are required to actually execute the work. Do not simply restate the title.
+        due_date: Optional ISO 8601 datetime for an intermediate decision or action deadline.
+            Set this only if the user specifies an early milestone distinct from the end_at
+            date. Leave unset otherwise.
         target_value: Required unless progress_metric_type is "boolean".
         required_connectors: Connectors this goal's tracking depends on, if any.
 

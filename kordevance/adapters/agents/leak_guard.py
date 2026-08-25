@@ -5,10 +5,6 @@ from pydantic_ai.messages import ModelMessage, ModelResponse, TextPart
 
 logger = logging.getLogger(__name__)
 
-# Vocabulary that only makes sense if the model is describing its own implementation rather
-# than answering the user. Prompt instructions ask every agent not to say these things, but
-# instructions are probabilistic
-
 # DISCLAIMER: This pattern surely doesn't cover all cases
 _LEAK_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
     re.compile(pattern, re.IGNORECASE)
