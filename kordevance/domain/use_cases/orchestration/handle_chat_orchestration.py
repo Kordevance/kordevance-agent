@@ -8,4 +8,6 @@ class HandleChatOrchestration(UseCase[ChatOrchestrationRequest, str]):
         self._orchestrator: ChatOrchestrator = chat_orchestrator
 
     async def execute(self, request: ChatOrchestrationRequest) -> str:
-        return await self._orchestrator.handle_message(request.profile_id, request.conversation_id, request.message)
+        return await self._orchestrator.handle_message(
+            request.profile_id, request.conversation_id, request.message, request.timezone
+        )

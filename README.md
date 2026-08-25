@@ -1,1 +1,1 @@
-# Kordevance Agent
+# Kordevance Agent (Kordi Gateway)

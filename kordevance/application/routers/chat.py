@@ -21,7 +21,9 @@ async def send_message(
     body: ChatMessageRequest, service: ChatOrchestratorDep, profile_id: UUID = Depends(get_profile_id)
 ) -> ChatMessageResponse:
     conversation_id = body.conversation_id or uuid4()
-    request = ChatOrchestrationRequest(profile_id=profile_id, conversation_id=conversation_id, message=body.message)
+    request = ChatOrchestrationRequest(
+        profile_id=profile_id, conversation_id=conversation_id, message=body.message, timezone=body.timezone
+    )
     reply = await service.execute(request)
     return ChatMessageResponse(conversation_id=conversation_id, reply=reply)
 
