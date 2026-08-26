@@ -1,3 +1,4 @@
+import shutil
 from functools import lru_cache
 from typing import Annotated
 
@@ -11,6 +12,7 @@ from kordevance.adapters.sql_store.device_registration_repository import DeviceR
 from kordevance.adapters.sql_store.event_repository import EventRepository
 from kordevance.adapters.sql_store.goal_repository import GoalRepository
 from kordevance.adapters.sql_store.llm_provider_repository import LLMProviderRepository
+from kordevance.adapters.sql_store.migrations import MIGRATIONS
 from kordevance.adapters.sql_store.model_assignment_repository import ModelAssignmentRepository
 from kordevance.adapters.sql_store.profile_repository import ProfileRepository
 from kordevance.adapters.sql_store.task_repository import TaskRepository
@@ -34,9 +36,26 @@ def get_engine() -> AsyncEngine:
 
 
 async def init_db() -> None:
+    db_existed = _DB_PATH.exists()
     engine = get_engine()
+
+    async with engine.connect() as conn:
+        current_version = (await conn.exec_driver_sql("PRAGMA user_version")).scalar_one()
+
+    if current_version < len(MIGRATIONS) and db_existed:
+        async with engine.begin() as conn:
+            await conn.exec_driver_sql("PRAGMA wal_checkpoint(TRUNCATE)")
+        shutil.copy2(_DB_PATH, _DB_PATH.with_name(f"{_DB_PATH.name}.bak-v{current_version}"))
+
     async with engine.begin() as conn:
         await conn.exec_driver_sql("PRAGMA journal_mode=WAL")
+
+        for migration in MIGRATIONS[current_version:]:
+            await conn.run_sync(migration)
+
+        if current_version < len(MIGRATIONS):
+            await conn.exec_driver_sql(f"PRAGMA user_version = {len(MIGRATIONS)}")
+
         await conn.run_sync(SQLModel.metadata.create_all)
 
 
