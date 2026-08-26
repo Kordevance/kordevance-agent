@@ -24,6 +24,8 @@ class HandleCreateGoal(UseCase[CreateGoalRequest, Goal]):
             progress_metric_type=request.progress_metric_type,
             target_value=request.target_value,
             required_connectors=request.required_connectors,
+            timezone_mode=request.timezone_mode,
+            specific_timezone=request.specific_timezone,
         )
 
         # Keeps the goal's cron alive from the moment it exists

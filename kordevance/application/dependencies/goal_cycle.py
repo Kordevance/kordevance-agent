@@ -11,6 +11,7 @@ from kordevance.application.dependencies.sql_store_adapter import (
     GoalRepoDep,
     ModelAssignmentDep,
     ModelProviderDep,
+    ProfileRepoDep,
     TaskRepoDep,
     get_llm_provider_repository,
     get_model_assignment_repository,
@@ -58,9 +59,14 @@ def get_run_goal_cycle_use_case(
     task_repo: TaskRepoDep,
     event_repo: EventRepoDep,
     goal_cycle_engine: Annotated[GoalCycleEngine, Depends(get_goal_cycle_engine)],
+    profile_repo: ProfileRepoDep,
 ) -> HandleRunGoalCycle:
     return HandleRunGoalCycle(
-        goal_repo=goal_repo, task_repo=task_repo, event_repo=event_repo, goal_cycle_engine=goal_cycle_engine
+        goal_repo=goal_repo,
+        task_repo=task_repo,
+        event_repo=event_repo,
+        goal_cycle_engine=goal_cycle_engine,
+        profile_repo=profile_repo,
     )
 
 

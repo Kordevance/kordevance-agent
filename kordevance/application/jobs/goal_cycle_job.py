@@ -5,6 +5,7 @@ from kordevance.application.dependencies.goal_cycle import get_goal_cycle_engine
 from kordevance.application.dependencies.sql_store_adapter import (
     get_event_repository,
     get_goal_repository,
+    get_profile_repository,
     get_task_repository,
 )
 from kordevance.domain.use_cases.goal_cycle_management.handle_run_goal_cycle import HandleRunGoalCycle
@@ -19,6 +20,7 @@ async def run_goal_cycle_job(profile_id: str, goal_id: str) -> None:
         task_repo=get_task_repository(),
         event_repo=get_event_repository(),
         goal_cycle_engine=get_goal_cycle_engine_standalone(),
+        profile_repo=get_profile_repository(),
     )
 
     try:

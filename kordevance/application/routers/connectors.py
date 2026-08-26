@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends
 
 from kordevance.application.dependencies.auth import require_paired_device
@@ -8,18 +6,23 @@ from kordevance.application.dependencies.connectors_management import (
     FetchConnectorsUseCaseDep,
     RegisterConnectorsUseCaseDep,
 )
-from kordevance.application.dependencies.deps import get_profile_id
+from kordevance.application.dependencies.deps import get_profile_context
 from kordevance.application.schemas.connectors import ConnectorRequest, GetConnectorsResponse
+from kordevance.application.schemas.profile import ProfileContext
 from kordevance.domain.use_cases.connectors_management.request_models import ConnectorRequest as Cr
 
-router: APIRouter = APIRouter(prefix="/connectors", tags=["connectors"], dependencies=[Depends(require_paired_device)])
+router: APIRouter = APIRouter(
+    prefix="/connectors",
+    tags=["connectors"],
+    dependencies=[Depends(require_paired_device), Depends(get_profile_context)],
+)
 
 
 @router.get("", response_model=list[GetConnectorsResponse])
 async def get_all_connectors(
-    service: FetchConnectorsUseCaseDep, profile_id: UUID = Depends(get_profile_id)
+    service: FetchConnectorsUseCaseDep, profile_context: ProfileContext = Depends(get_profile_context)
 ) -> list[GetConnectorsResponse]:
-    connectors = await service.execute(profile_id)
+    connectors = await service.execute(profile_context.profile_id)
     return [
         GetConnectorsResponse(
             provider=connector.provider, category=connector.category, active=connector.active, icon=connector.icon
@@ -30,17 +33,22 @@ async def get_all_connectors(
 
 @router.post("/register")
 async def register_connector(
-    request: ConnectorRequest, service: RegisterConnectorsUseCaseDep, profile_id: UUID = Depends(get_profile_id)
+    request: ConnectorRequest,
+    service: RegisterConnectorsUseCaseDep,
+    profile_context: ProfileContext = Depends(get_profile_context),
 ) -> str:
-    payload = Cr(profile_id=profile_id, provider=request.provider, category=request.category)
+    payload = Cr(profile_id=profile_context.profile_id, provider=request.provider, category=request.category)
 
     return await service.execute(payload)
 
 
 @router.delete("")
 async def delete_connector(
-    provider: str, category: str, service: DeleteConnectorsUseCaseDep, profile_id: UUID = Depends(get_profile_id)
+    provider: str,
+    category: str,
+    service: DeleteConnectorsUseCaseDep,
+    profile_context: ProfileContext = Depends(get_profile_context),
 ) -> None:
-    payload = Cr(profile_id=profile_id, provider=provider, category=category)
+    payload = Cr(profile_id=profile_context.profile_id, provider=provider, category=category)
 
     return await service.execute(payload)

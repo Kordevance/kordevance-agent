@@ -2,7 +2,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from kordevance.domain.datetime_utils import as_aware_utc
+from kordevance.domain.datetime_utils import as_aware_utc, resolve_execution_timezone
 from kordevance.domain.models.engine_source import EngineSource
 from kordevance.domain.models.event import Event
 from kordevance.domain.models.goal import Goal, GoalStatus, HorizonGranularity
@@ -12,6 +12,7 @@ from kordevance.domain.models.task import Task, TaskStatus
 from kordevance.domain.ports.event_repository import EventRepo
 from kordevance.domain.ports.goal_cycle_engine import GoalCycleEngine
 from kordevance.domain.ports.goal_repository import GoalRepo
+from kordevance.domain.ports.profile_repository import ProfileRepo
 from kordevance.domain.ports.task_repository import TaskRepo
 from kordevance.exceptions import ItemNotFoundError
 
@@ -36,12 +37,14 @@ class GoalCycleService:
         task_repo: TaskRepo,
         event_repo: EventRepo,
         goal_cycle_engine: GoalCycleEngine,
+        profile_repo: ProfileRepo,
     ) -> None:
         self._logger: logging.Logger = logging.getLogger(__name__)
         self._goal_repo: GoalRepo = goal_repo
         self._task_repo: TaskRepo = task_repo
         self._event_repo: EventRepo = event_repo
         self._goal_cycle_engine: GoalCycleEngine = goal_cycle_engine
+        self._profile_repo: ProfileRepo = profile_repo
 
     async def run_cycle(self, profile_id: UUID, goal_id: UUID) -> GoalCycleResult:
         goal = await self._goal_repo.fetch(profile_id, goal_id)
@@ -64,9 +67,11 @@ class GoalCycleService:
                 return result
 
         existing_tasks = await self._task_repo.fetch_all_for_goal(profile_id, goal_id)
+        profile = await self._profile_repo.fetch(profile_id)
+        timezone = resolve_execution_timezone(goal, profile).key
 
         try:
-            still_active = await self._run_engine(goal, existing_tasks, result, now, is_final_attempt)
+            still_active = await self._run_engine(goal, existing_tasks, result, now, is_final_attempt, timezone)
         except Exception as error:
             await self._handle_cycle_failure(goal, result, error)
             return result
@@ -108,12 +113,14 @@ class GoalCycleService:
         result: GoalCycleResult,
         now: datetime,
         is_final_attempt: bool,
+        timezone: str,
     ) -> bool:
         finding = await self._goal_cycle_engine.run(
             goal=goal,
             profile_id=goal.profile_id,
             existing_tasks=existing_tasks,
             is_final_attempt=is_final_attempt,
+            timezone=timezone,
         )
 
         if not finding.candidates and not finding.completed_tasks:

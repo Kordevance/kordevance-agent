@@ -6,6 +6,7 @@ from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
 from kordevance.domain.models.goal import GoalStatus, HorizonGranularity, ProgressMetricType
+from kordevance.domain.models.tz import TimezoneMode
 
 
 class GoalRecord(SQLModel, table=True):
@@ -36,3 +37,5 @@ class GoalRecord(SQLModel, table=True):
 
     created_at: datetime
     updated_at: datetime
+    timezone_mode: TimezoneMode
+    specific_timezone: str | None = None

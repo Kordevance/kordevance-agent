@@ -5,6 +5,7 @@ from pydantic_ai import RunContext
 from kordevance.adapters.agents.deps import GoalDefinitionDeps
 from kordevance.domain.models.connectors import Connector
 from kordevance.domain.models.goal import HorizonGranularity, ProgressMetricType
+from kordevance.domain.models.tz import TimezoneMode
 from kordevance.domain.use_cases.goal_management.request_models import CreateGoalRequest
 
 
@@ -15,6 +16,8 @@ async def create_goal(
     start_at: str,
     end_at: str,
     progress_metric_type: ProgressMetricType,
+    timezone_mode: TimezoneMode,
+    specific_timezone: str | None = None,
     horizon_granularity: HorizonGranularity | None = None,
     description: str | None = None,
     due_date: str | None = None,
@@ -43,6 +46,11 @@ async def create_goal(
             specific check-in cadence (daily, weekly, monthly). Do not infer this from
             the domain. Leave unset by default.
         progress_metric_type: How progress is measured.
+        timezone_mode: Categorize time sensitivity. Set to "floating" for habits or routines
+            that follow the user's dynamic location, "home" for tasks anchored strictly to
+            their primary residence, "fixed" for tasks tied to a specific destination region.
+        specific_timezone: Optional IANA timezone string (e.g., "Asia/Tokyo", "Africa/Casablanca").
+            Required ONLY when timezone_mode is set to "fixed". Leave unset otherwise.
         description: A comprehensive, self-contained brief of the goal. This must include
             all domain-specific facts, constraints, and parameters gathered from the user
             that are required to actually execute the work. Do not simply restate the title.
@@ -68,6 +76,8 @@ async def create_goal(
             progress_metric_type=progress_metric_type,
             target_value=target_value,
             required_connectors=required_connectors or [],
+            timezone_mode=timezone_mode,
+            specific_timezone=specific_timezone,
         )
     )
     return f"Goal '{goal.title}' created (id={goal.id})."

@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
 from kordevance.domain.models.connectors import Connector
+from kordevance.domain.models.tz import TimezoneMode
 
 
 class GoalStatus(StrEnum):
@@ -60,3 +61,5 @@ class Goal(BaseModel):
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timezone_mode: TimezoneMode
+    specific_timezone: str | None = None  # Populated ONLY if timezone_mode == FIXED

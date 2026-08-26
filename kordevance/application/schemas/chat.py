@@ -9,7 +9,6 @@ from kordevance.domain.models.chat_turn import ChatTurn
 class ChatMessageRequest(BaseModel):
     conversation_id: UUID | None = None
     message: str
-    timezone: str | None = None
 
 
 class ChatMessageResponse(BaseModel):

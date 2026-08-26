@@ -5,6 +5,7 @@ from uuid import UUID
 from kordevance.domain.datetime_utils import as_aware_utc
 from kordevance.domain.models.connectors import Connector
 from kordevance.domain.models.goal import Goal, GoalStatus, HorizonGranularity, ProgressMetricType
+from kordevance.domain.models.tz import TimezoneMode
 from kordevance.domain.ports.goal_repository import GoalRepo
 from kordevance.exceptions import BadRequestError
 
@@ -22,6 +23,8 @@ class GoalService:
         start_at: datetime,
         end_at: datetime,
         progress_metric_type: ProgressMetricType,
+        timezone_mode: TimezoneMode,
+        specific_timezone: str | None = None,
         horizon_granularity: HorizonGranularity | None = None,
         description: str | None = None,
         due_date: datetime | None = None,
@@ -60,6 +63,8 @@ class GoalService:
             required_connectors=required_connectors or [],
             created_at=now,
             updated_at=now,
+            timezone_mode=timezone_mode,
+            specific_timezone=specific_timezone,
         )
 
         await self._repository.save(goal)

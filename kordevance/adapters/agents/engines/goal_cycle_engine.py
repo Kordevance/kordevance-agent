@@ -6,6 +6,7 @@ from pydantic_ai import Agent
 from pydantic_ai.tools import Tool
 
 from kordevance.adapters.agents.model_resolver import ModelResolver
+from kordevance.adapters.agents.time_context import describe_current_datetime
 from kordevance.adapters.agents.tools.get_current_datetime_tool import get_current_datetime
 from kordevance.adapters.agents.tools.proxy_relay_tools import build_callable_tools
 from kordevance.domain.models.goal import Goal
@@ -86,9 +87,9 @@ class PydanticAIGoalCycleEngine(GoalCycleEngine):
         )
 
     @staticmethod
-    def _goal_context(goal: Goal, is_final_attempt: bool) -> str:
+    def _goal_context(goal: Goal, is_final_attempt: bool, timezone: str) -> str:
         return f"""
-                    Current date and time: {datetime.now(UTC).isoformat()}
+                    Current date and time: {describe_current_datetime(datetime.now(UTC), timezone)}
                     Goal: {goal.title}
                     Goal description/preferences: {goal.description or "(none)"}
                     Goal domain: {goal.domain}
@@ -97,7 +98,7 @@ class PydanticAIGoalCycleEngine(GoalCycleEngine):
                 """
 
     async def _should_explore(
-        self, goal: Goal, profile_id: UUID, existing_tasks: list[Task], is_final_attempt: bool
+        self, goal: Goal, profile_id: UUID, existing_tasks: list[Task], is_final_attempt: bool, timezone: str
     ) -> GoalCycleTriageDecision:
         if is_final_attempt:
             return GoalCycleTriageDecision(should_explore=True, reason="Final attempt, always explore.")
@@ -107,13 +108,14 @@ class PydanticAIGoalCycleEngine(GoalCycleEngine):
             model=model, output_type=GoalCycleTriageDecision, instructions=_TRIAGE_INSTRUCTIONS
         )
         prompt = (
-            self._goal_context(goal, is_final_attempt) + f"\nExisting tasks:\n{self._tasks_context(existing_tasks)}"
+            self._goal_context(goal, is_final_attempt, timezone)
+            + f"\nExisting tasks:\n{self._tasks_context(existing_tasks)}"
         )
         result = await agent.run(prompt)
         return result.output
 
     async def _explore(
-        self, goal: Goal, profile_id: UUID, existing_tasks: list[Task], is_final_attempt: bool
+        self, goal: Goal, profile_id: UUID, existing_tasks: list[Task], is_final_attempt: bool, timezone: str
     ) -> GoalCycleFinding:
         device = self._device_service.get_current_device()
         all_tools = await self._proxy_relay_client.get_available_tools(device, profile_id)
@@ -137,7 +139,7 @@ class PydanticAIGoalCycleEngine(GoalCycleEngine):
         )
         confirmation_only_desc = "\n".join(f"- {t.name}: {t.description}" for t in confirmation_only_tools) or "(none)"
         prompt = (
-            self._goal_context(goal, is_final_attempt)
+            self._goal_context(goal, is_final_attempt, timezone)
             + f"""
 Existing tasks:
 {self._tasks_context(existing_tasks)}
@@ -167,13 +169,14 @@ Tools requiring confirmation (describe only, never call):
         existing_tasks: list[Task],
         is_final_attempt: bool,
         draft: GoalCycleFinding,
+        timezone: str,
     ) -> GoalCycleFinding:
         model = await self._model_resolver.resolve(profile_id, ModelRole.PRIMARY)
         agent: Agent[None, GoalCycleFinding] = Agent(
             model=model, output_type=GoalCycleFinding, instructions=_REVIEW_INSTRUCTIONS
         )
         prompt = (
-            self._goal_context(goal, is_final_attempt)
+            self._goal_context(goal, is_final_attempt, timezone)
             + f"\nExisting tasks:\n{self._tasks_context(existing_tasks)}"
             + f"\nDraft finding to review:\n{draft.model_dump_json()}"
         )
@@ -186,14 +189,15 @@ Tools requiring confirmation (describe only, never call):
         profile_id: UUID,
         existing_tasks: list[Task],
         is_final_attempt: bool,
+        timezone: str,
     ) -> GoalCycleFinding:
-        triage = await self._should_explore(goal, profile_id, existing_tasks, is_final_attempt)
+        triage = await self._should_explore(goal, profile_id, existing_tasks, is_final_attempt, timezone)
         if not triage.should_explore:
             return GoalCycleFinding(summary=triage.reason)
 
-        draft = await self._explore(goal, profile_id, existing_tasks, is_final_attempt)
+        draft = await self._explore(goal, profile_id, existing_tasks, is_final_attempt, timezone)
 
         if self._needs_review(draft, is_final_attempt):
-            return await self._review(goal, profile_id, existing_tasks, is_final_attempt, draft)
+            return await self._review(goal, profile_id, existing_tasks, is_final_attempt, draft, timezone)
 
         return draft

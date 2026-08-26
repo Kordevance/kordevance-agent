@@ -66,6 +66,12 @@ select = [
 fixable = ["ALL"]
 unfixable = ["B"]
 
+[tool.ruff.lint.per-file-ignores]
+"kordevance/adapters/agents/persona.py" = ["E501"]
+"kordevance/adapters/agents/orchestrator.py" = ["E501"]
+"kordevance/adapters/agents/goal_definition_agent.py" = ["E501"]
+"kordevance/adapters/agents/engines/goal_cycle_engine.py" = ["E501"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

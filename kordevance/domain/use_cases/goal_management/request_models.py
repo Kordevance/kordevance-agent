@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from kordevance.domain.models.connectors import Connector
 from kordevance.domain.models.goal import HorizonGranularity, ProgressMetricType
+from kordevance.domain.models.tz import TimezoneMode
 
 
 class CreateGoalRequest(BaseModel):
@@ -19,6 +20,8 @@ class CreateGoalRequest(BaseModel):
     progress_metric_type: ProgressMetricType
     target_value: float | None = None
     required_connectors: list[Connector] = []
+    timezone_mode: TimezoneMode
+    specific_timezone: str | None = None
 
 
 class DeleteGoalRequest(BaseModel):

@@ -14,4 +14,5 @@ class GoalCycleEngine(ABC):
         profile_id: UUID,
         existing_tasks: list[Task],
         is_final_attempt: bool,
+        timezone: str,
     ) -> GoalCycleFinding: ...

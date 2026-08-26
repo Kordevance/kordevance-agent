@@ -15,3 +15,9 @@ class ProfileResponse(BaseModel):
 class UpdateProfileRequest(BaseModel):
     id: UUID
     name: str
+    home_timezone: str
+
+
+class ProfileContext(BaseModel):
+    profile_id: UUID
+    timezone: str

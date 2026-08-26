@@ -36,6 +36,8 @@ class GoalRepository(GoalRepo):
             required_connectors=[Connector(**connector) for connector in row.required_connectors],
             created_at=row.created_at,
             updated_at=row.updated_at,
+            timezone_mode=row.timezone_mode,
+            specific_timezone=row.specific_timezone,
         )
 
     async def save(self, goal: Goal) -> None:
