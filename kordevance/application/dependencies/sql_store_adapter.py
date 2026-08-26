@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel import SQLModel
 
 from kordevance.adapters.crypto.fernet_encryptor import FernetEncryptor
+from kordevance.adapters.crypto.keyring_master_key import KeyringMasterKey
 from kordevance.adapters.sql_store.device_registration_repository import DeviceRegistrationRepository
 from kordevance.adapters.sql_store.event_repository import EventRepository
 from kordevance.adapters.sql_store.goal_repository import GoalRepository
@@ -14,7 +15,7 @@ from kordevance.adapters.sql_store.model_assignment_repository import ModelAssig
 from kordevance.adapters.sql_store.profile_repository import ProfileRepository
 from kordevance.adapters.sql_store.task_repository import TaskRepository
 from kordevance.application import _WORKING_DIRECTORY
-from kordevance.application.config.secrets import load_or_create_encryption_key
+from kordevance.application.dependencies.secret_store_adapter import get_credential_manager
 from kordevance.domain.ports.device_registration_repository import DeviceRegistrationRepo
 from kordevance.domain.ports.encryptor import Encryptor
 from kordevance.domain.ports.event_repository import EventRepo
@@ -41,7 +42,7 @@ async def init_db() -> None:
 
 @lru_cache(maxsize=1)
 def get_encryptor() -> Encryptor:
-    return FernetEncryptor(load_or_create_encryption_key())
+    return FernetEncryptor(KeyringMasterKey(get_credential_manager()).load_or_create())
 
 
 def get_profile_repository() -> ProfileRepo:
