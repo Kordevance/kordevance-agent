@@ -100,7 +100,7 @@ lint = {sequence = [{cmd = "ruff check kordevance --fix"}, {cmd = "ruff format k
 typecheck = {cmd = "mypy"}
 boundaries = {cmd = "lint-imports"}
 check = ["lint", "typecheck", "boundaries"]
-serve = {cmd = "gunicorn kordevance.application.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8080 --reload"}
+serve = {cmd = "gunicorn kordevance.application.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:24680 --reload"}
 bundle = {cmd = "pyinstaller packaging/gateway.spec --noconfirm --clean"}
 
 [tool.importlinter]
