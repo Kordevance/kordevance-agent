@@ -5,7 +5,7 @@ from kordevance.adapters.http.proxy_relay_client import HttpProxyRelayClient
 from kordevance.domain.ports.proxy_relay_client import ProxyRelayClient
 
 _PROXY_RELAY_BASE_URL_ENV: str = "PROXY_RELAY_BASE_URL"
-_PROXY_RELAY_BASE_URL: str = "https://proxy.relay.kordevance.com/api"
+_PROXY_RELAY_BASE_URL: str = "https://proxy-relay.kordevance.com/api"
 
 
 @lru_cache(maxsize=1)
