@@ -10,9 +10,7 @@ from kordevance.application.dependencies.credential_management import get_purge_
 def purge_keyring(yes: bool) -> None:
     if not yes:
         click.secho("[CAUTION] This is a destructive action.", fg="yellow", bold=True)
-        click.echo(
-            "It deletes every credential Kordevance stored in the OS keyring."
-        )
+        click.echo("It deletes every credential Kordevance stored in the OS keyring.")
         click.echo()
 
         answer = click.prompt(

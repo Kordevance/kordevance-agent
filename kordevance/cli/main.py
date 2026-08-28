@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-import logging
-from collections.abc import Iterable
-from importlib.metadata import PackageNotFoundError, version
+import os
 
-import click
+os.environ.setdefault("PYDANTIC_DISABLE_PLUGINS", "1")
+
+import logging  # noqa: E402
+from collections.abc import Iterable  # noqa: E402
+from importlib.metadata import PackageNotFoundError, version  # noqa: E402
+
+import click  # noqa: E402
 
 from kordevance import _APPLICATION_NAME
 
