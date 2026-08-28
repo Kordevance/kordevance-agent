@@ -1,0 +1,14 @@
+[Unit]
+Description=Kordevance Gateway
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=__INSTALL_DIR__/kordevance-gateway
+WorkingDirectory=__INSTALL_DIR__
+Restart=on-failure
+RestartSec=5
+User=__SERVICE_USER__
+
+[Install]
+WantedBy=multi-user.target

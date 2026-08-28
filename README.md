@@ -29,7 +29,7 @@ you choose and control.
 ## How it works
 
 <p align="center">
-  <img src=".github/assets/architecture.svg" alt="Kordi Gateway architecture: client apps talk to the gateway, which talks to ProxyRelay for connectors, directly to your chosen LLM providers, and to local storage under ~/.kordevance" width="100%">
+  <img src=".github/assets/architecture.svg" alt="Kordi Gateway architecture" width="100%">
 </p>
 
 The Kordi Gateway runs as a single self-hosted process on your machine, handling all
