@@ -61,14 +61,24 @@ CLI.
 curl -fsSL https://kordevance.com/install.sh | sh
 ```
 
-**macOS** -- download the signed, notarized `.pkg` for your architecture (`arm64` /
+**macOS**: download the signed, notarized `.pkg` for your architecture (`arm64` /
 `x86_64`) from the latest release and run it. It installs a `launchd` agent.
 
-**Windows** -- download and run `Kordevance-Setup.exe` from the latest release. It
+**Windows**: download and run `Kordevance-Setup.exe` from the latest release. It
 installs a Windows service.
 
-Each platform also ships an uninstaller that removes the service without touching
-`~/.kordevance`.
+Each platform also ships an uninstaller that fully removes the gateway: the
+service, the OS keyring credentials, and `~/.kordevance` (all goals,
+conversations, and provider settings). Always use it instead of deleting the
+app manually.
+
+If you do remove the app without running the uninstaller, for example by
+dragging it to the Trash on macOS, deleting its folder in Program Files on
+Windows, or removing its install directory on Linux, neither the OS keyring
+entries nor `~/.kordevance` get cleaned up, since both live outside the
+app's install directory. Clear them by hand in that case. Run
+`kordi purge-keyring` if the binary is still on your PATH, or remove the
+credentials from your OS keychain manually, and delete `~/.kordevance`.
 
 ### From source
 
@@ -79,23 +89,20 @@ poetry install
 poetry run poe serve   # starts the API on 127.0.0.1:24680
 ```
 
+## Uninstalling
+
+**Linux**: `sudo /opt/kordevance/uninstall.sh`
+
+**macOS**: `sudo /Applications/Kordevance/uninstall.sh`
+
+**Windows**: uninstall Kordevance from Windows Setting Apps, same as any
+other application.
+
+Each of these removes the service, the OS keyring credentials, and
+`~/.kordevance`. See the note above if you already removed the app without
+running the proper uninstaller.
+
 ## Getting started
-
-[//]: # (1. Start the gateway &#40;via the installed service, or `kordevance-gateway` from source&#41;.)
-
-[//]: # (2. On first boot, with no owner device paired yet, it logs a **claim code**. You can also)
-
-[//]: # (   fetch it any time with `kordi status`.)
-
-[//]: # (3. Enter that claim code in a Kordi client app to pair it as the **owner** device.)
-
-[//]: # (   The owner can then invite additional devices, which pair as members.)
-
-[//]: # (4. Add at least one LLM provider &#40;your own API key&#41; and assign it to the `primary`,)
-
-[//]: # (   `triage`, and `discovery` model roles.)
-
-[//]: # (5. Create a profile, connect the connectors you want, and you are all setup.)
 
 1. **Start the gateway**  
    It should automatically kick-up at system startup
@@ -133,7 +140,8 @@ The gateway reads two environment variables at startup:
 ```
 kordi status    # pairing status, and this device's claim code if unpaired
 kordi repair    # wipe paired devices + invites only. profiles/goals/history untouched
-kordi reset     # full factory reset of all gateway storage (destructive, irreversible)
+kordi reset     # wipe profiles, goals, providers, and pairing (destructive, irreversible).
+                # this device's registration and keyring credentials are kept
 ```
 
 Run `kordi -h` for the full help output.
