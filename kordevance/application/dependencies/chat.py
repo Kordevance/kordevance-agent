@@ -1,0 +1,51 @@
+from typing import Annotated
+
+from fastapi import Depends
+
+from kordevance.adapters.agents.model_resolver import ModelResolver
+from kordevance.adapters.agents.orchestrator import PydanticAIChatOrchestrator
+from kordevance.application.dependencies.connectors_management import FetchConnectorsUseCaseDep
+from kordevance.application.dependencies.fs_adapter import MessageStoreDep
+from kordevance.application.dependencies.goal_management import CreateGoalUseCaseDep
+from kordevance.application.dependencies.proxy_relay_client import get_proxy_relay_client
+from kordevance.application.dependencies.secret_store_adapter import get_credential_manager
+from kordevance.application.dependencies.sql_store_adapter import ModelAssignmentDep, ModelProviderDep
+from kordevance.domain.ports.chat_orchestrator import ChatOrchestrator
+from kordevance.domain.services.device_service import DeviceService
+from kordevance.domain.use_cases.orchestration.handle_chat_orchestration import HandleChatOrchestration
+from kordevance.domain.use_cases.orchestration.handle_fetch_conversations import HandleFetchConversations
+
+
+def _get_chat_orchestrator(
+    model_assignment_repo: ModelAssignmentDep,
+    llm_provider_repo: ModelProviderDep,
+    message_store: MessageStoreDep,
+    create_goal_use_case: CreateGoalUseCaseDep,
+    fetch_connectors_use_case: FetchConnectorsUseCaseDep,
+) -> ChatOrchestrator:
+    model_resolver = ModelResolver(model_assignment_repo=model_assignment_repo, llm_provider_repo=llm_provider_repo)
+    return PydanticAIChatOrchestrator(
+        model_resolver=model_resolver,
+        message_store=message_store,
+        create_goal_use_case=create_goal_use_case,
+        fetch_connectors_use_case=fetch_connectors_use_case,
+        proxy_relay_client=get_proxy_relay_client(),
+        device_service=DeviceService(store=get_credential_manager()),
+    )
+
+
+def get_handle_chat_orchestration_use_case(
+    chat_orchestrator: Annotated[ChatOrchestrator, Depends(_get_chat_orchestrator)],
+) -> HandleChatOrchestration:
+    return HandleChatOrchestration(chat_orchestrator)
+
+
+def get_fetch_conversations_use_case(
+    message_store: MessageStoreDep,
+    chat_orchestrator: Annotated[ChatOrchestrator, Depends(_get_chat_orchestrator)],
+) -> HandleFetchConversations:
+    return HandleFetchConversations(message_store, chat_orchestrator)
+
+
+ChatOrchestratorDep = Annotated[HandleChatOrchestration, Depends(get_handle_chat_orchestration_use_case)]
+FetchConversationsUseCaseDep = Annotated[HandleFetchConversations, Depends(get_fetch_conversations_use_case)]

@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.import_linter_cache/
+.DS_Store
+.idea/
+trash/
+.env
+*.db
+*.db-shm
+*.db-wal
+build/
+dist/
